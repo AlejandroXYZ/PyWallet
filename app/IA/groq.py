@@ -8,14 +8,18 @@ historial = [
     {
         "role": "system",
         "content": """
-    Tu misión es solo analizar el input del usuario y responder solo en Json, no puedes responder más nada, solo responde en formato JSON, el usuario te dirá una transacción que hizo o que quiere hacer y tu solo debes de analizar su mensaje y responder en un JSON con esta estructura:
-    {"accion": "CREATE", "monto":200.00,"etiqueta":"compra","descripcion":"compra de empanadas","cuenta":"BDV"}. Donde dice accion, solo puedes colocar estos 4 valores tal cual como están: 'CREATE','DELETE','UPDATE','READ','CONFLICT', tu deberías de saber cuál es la más adecuada dependiendo del contexto, usa conflict cuando falten datos o no se entienda el mensaje. Donde dice monto debe ser el monto de la transacción, la etiqueta debe ser solo una palabra que represente a toda la transaccion, descripción debe ser una descripción corta, y cuenta debe ser la cuenta desde que hizo la transacción abreviando su nombre en 3 o 4 letras, por ejemplo: Banco de Venezuela - BDV }
-    
-    Si te falta algún dato dilo pero en formato JSON siguiendo esta estructura:
+    Tu misión es solo analizar el input del usuario y responder solo en Json, no puedes responder más nada, solo responde en formato JSON, el usuario te dirá una transacción que hizo o que quiere hacer y tu solo debes de analizar su mensaje y responder en un JSON con una de estas estructuras dependiendo de lo que desee:
+    1.Primera estructura: {"accion": "CREATE","tipo":"gasto", "monto":200.00,"etiqueta":"compra","descripcion":"compra de empanadas","cuenta":"BDV","comentario":"Espero que te hayan gustado esas empanadas"}. Usala solo cuando estén todos los datos necesarios de lo contrario usa una de las otras dependiendo del contexto, donde dice accion, solo puedes colocar estos 4 valores tal cual como están: 'CREATE','DELETE','UPDATE','READ','CONFLICT', tu deberías de saber cuál es la más adecuada dependiendo del contexto, usa conflict cuando falten datos o no se entienda el mensaje.
+    Donde dice monto debe ser el monto de la transacción, la etiqueta debe ser solo una palabra que represente a toda la transaccion. 
+    descripción debe ser una descripción corta, y cuenta debe ser la cuenta desde que hizo la transacción abreviando su nombre en 3 o 4 letras, por ejemplo: Banco de Venezuela - BDV 
+    'tipo' debes de colocar el tipo de transaccion gasto,ingreso o transferencia, usa transferencia si es una transaccion de transferencia a cuentas propias, por ejemplo:'Transferí 40$ a mi cuenta de Binance'.
+    'comentario' aquí puedes colocar un pequeño comentario de tu parte con un emoji al final, no más de 10 palabras
+
+    2. Si te falta algún dato como el monto o la cuenta dilo pero en formato JSON siguiendo esta estructura, nunca hagas una transaccion de accion:"CREATE" si falta alguno de estos datos, repito NUNCA:
     {"accion":"CONFLICT","falta":"monto,cuenta..."}.
     
     Si el mensaje es de tipo DELETE o UPDATE, responde con un JSON con esta estructura:
-    {"accion":"DELETE","etiqueta":"zapato","cuenta":"BNC"}
+    {"accion":"DELETE","id":1234,"cuenta":"BNC"}
     """,
     }
 ]

@@ -1,3 +1,4 @@
+import re
 from sqlalchemy.orm import Session
 from app.db.connection import get_db
 from app.models.account import Cuentas
@@ -11,32 +12,81 @@ logger = logging.getLogger(name=__name__)
 def create(message: dict):
     with get_db() as db:
         logger.info("Verificando existencia de la cuenta")
-        cuenta_id = verificar_cuenta(message["cuenta"])
+
+        cuenta_id = (
+            db.query(Cuentas).filter(message["cuenta"] == Cuentas.nombre).first()
+        )
+
+        if not cuenta_id:
+            return False
+
         logger.info("Cuenta Verificada Correctamente")
-        if cuenta_id:
-            logger.info("Creando transaccion")
-            transaccion = Transaction(
-                monto=message["monto"],
-                etiqueta=message["etiqueta"],
-                descripcion=message["descripcion"],
-                cuenta=cuenta_id.id,
-            )
-            logger.info("Sumando monto a la cuenta")
-            cuenta_id.saldo = cuenta_id.saldo + Decimal(transaccion.monto)
+        logger.info("Creando transaccion")
+        transaccion = Transaction(
+            monto=message["monto"],
+            etiqueta=message["etiqueta"],
+            descripcion=message["descripcion"],
+            cuenta=cuenta_id.id,
+        )
+        match message["tipo"]:
+            case "ingreso":
+                logger.info("Sumando monto a la cuenta")
+                cuenta_id.saldo = cuenta_id.saldo + Decimal(transaccion.monto)
+            case "gasto":
+                logger.info("Restando monto de la cuenta")
+                cuenta_id.saldo = cuenta_id.saldo - Decimal(transaccion.monto)
+            case "transferencia":
+                pass
+            case _:
+                logger.error("Tipo de transacción no válido")
+                return False
 
-            db.add(transaccion)
-            db.commit()
-            db.refresh(transaccion)
-            return transaccion.id
-        else:
-            return False
+        db.add(transaccion)
+        db.commit()
+        db.refresh(transaccion)
+        db.refresh(cuenta_id)
+        return [transaccion.id, cuenta_id.saldo, cuenta_id.nombre]
 
 
-def verificar_cuenta(cuenta: str):
+def delete(message: dict) -> dict:
+    r"""Función de Borrado, no borra la transacción solo cambia entre un estado activa o desactiva ocultando su existencia"""
     with get_db() as db:
-        verificacion = db.query(Cuentas).filter(cuenta == Cuentas.nombre).first()
+        logger.info("Verificando ID de la transaccion en la DB")
+        transaccion_existente = (
+            db.query(Transaction).filter(Transaction.id == message["id"]).first()
+        )
+        if not transaccion_existente:
+            logger.error("El ID de la transaccion no existe")
+            return {"status": False, "mensaje": "El ID de la transacción no existe"}
 
-        if not verificacion:
-            return False
+        logger.info("Buscando Cuenta de la transaccion")
+        cuenta = (
+            db.query(Cuentas).filter(Cuentas.id == transaccion_existente.cuenta).first()
+        )
+        logger.info(f"Cuenta Encontrada: {cuenta.nombre}")
 
-        return verificacion
+        if transaccion_existente.activa:
+            logger.info("Transaccion Activa, Eliminando...")
+            transaccion_existente.activa = False
+            cuenta.saldo = cuenta.saldo - transaccion_existente.monto
+            db.commit()
+            db.refresh(transaccion_existente)
+            db.refresh(cuenta)
+            logger.info("Hecho")
+            return {
+                "status": True,
+                "mensaje": f"Transaccion eliminada correctamente de la cuenta {cuenta.nombre}",
+            }
+
+        elif not transaccion_existente.activa:
+            logger.info("Transacción ya Eliminada")
+            return {"status": False, "mensaje": f"Error, la transacción ya no existe"}
+
+        else:
+            logger.error(
+                "Error en la base de datos, la transaccion no se encuentra ni activa ni desactiva"
+            )
+            return {
+                "status": False,
+                "mensaje": "Error en la base de datos, la transaccion no se encuentra activa ni desactiva",
+            }
