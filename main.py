@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
-from app.bot.main_bot import bot, dp
+from app.bot.main_bot import setup_bot
 import os
 import sys
 
@@ -14,14 +14,13 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-
 webhook_url = os.getenv("WEBHOOK_URL", "https://dominio-publico.com")
-
 environment = os.getenv("ENVIRONMENT", "development")
 
 
 @asynccontextmanager
 async def lifespan():
+    bot, dp = await setup_bot()
 
     if environment == "development":
         logger.info("Modo Desarrollo")

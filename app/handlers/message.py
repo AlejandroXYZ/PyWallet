@@ -38,8 +38,6 @@ async def analizar_mensaje(mensaje: Message):
                 else:
                     await mensaje.answer(f"{transaccion['mensaje']}")
 
-            case "UPDATE":
-                print("Actualizar")
             case "CONFLICT":
                 await mensaje.answer(respuesta)
             case _:
