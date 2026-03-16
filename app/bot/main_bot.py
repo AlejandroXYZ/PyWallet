@@ -4,6 +4,7 @@ from aiogram.enums import ParseMode
 import os
 from app.handlers.start import start_router
 from app.handlers.message import IA_message
+from app.handlers import historial
 from app.bot.menu_commands import setup_commands
 import asyncio
 import logging
@@ -23,6 +24,7 @@ async def setup_bot():
     dp = Dispatcher()
 
     dp.include_router(start_router)
+    dp.include_router(historial.historial)
     dp.include_router(IA_message)
     await setup_commands(bot=bot)
     return bot, dp

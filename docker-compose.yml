@@ -2,7 +2,7 @@ services:
   backend:
     build: .
     container_name: "backend"
-    command: bash -c "python main.py"
+    command: bash -c "alembic upgrade head && python main.py"
     ports:
       - 80:80
     volumes:
