@@ -3,15 +3,22 @@ from aiogram import Router, types
 from aiogram.methods import edit_chat_invite_link
 from aiogram.types import InlineKeyboardButton, Message, reply_keyboard_markup
 from aiogram.filters import Command
+from aiogram.enums import ParseMode
 from app.handlers.FSM.historial_fsm import HistorialFSM
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from app.handlers.utils.cuentas import obtener_cuentas
+from app.handlers.utils.transacciones import obtener_transacciones
+import logging
+
 
 historial = Router(name="historial")
 
+logger = logging.getLogger(name=__name__)
+
 
 def get_keyboard_historial():
+    logging.info("Mostrando Cuentas al Usuario")
     builder = InlineKeyboardBuilder()
     cuentas = obtener_cuentas()
     botones = []
@@ -27,6 +34,7 @@ def get_keyboard_historial():
 
 @historial.message(Command("historial"))
 async def cmd_historial(mensaje: Message, state: FSMContext):
+    logger.info("Capturando mensaje")
     await mensaje.answer(
         "Qué cuenta deseas consultar??", reply_markup=get_keyboard_historial()
     )
@@ -35,8 +43,10 @@ async def cmd_historial(mensaje: Message, state: FSMContext):
 
 @historial.callback_query(HistorialFSM.cuenta)
 async def cantidad(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
     cuenta = callback.data.split(":")
     await state.update_data(cuenta=cuenta[0])
+    logger.info(f"El Usuario eligió: {callback.data}")
 
     builder = InlineKeyboardBuilder()
 
@@ -62,18 +72,22 @@ async def fecha(callback: types.CallbackQuery, state: FSMContext):
         await callback.message.edit_text(
             text="Qué Cuenta deseas Consultar??", reply_markup=get_keyboard_historial()
         )
+        logger.info("El usuario eligió: 'Volver'")
         return
+    await callback.answer()
+
     cantidad = callback.data
+    logger.info(f"El Usuario eligió cantidad: {callback.data} ")
     await state.update_data(cantidad=cantidad)
 
     builder = InlineKeyboardBuilder()
 
     botones = [
         types.InlineKeyboardButton(text="Hoy", callback_data="hoy"),
-        types.InlineKeyboardButton(text="Ayer", callback_data="Ayer"),
-        types.InlineKeyboardButton(text="Semana Pasada", callback_data="Semana Pasada"),
-        types.InlineKeyboardButton(text="Mes Pasado", callback_data="Mes Pasado"),
-        types.InlineKeyboardButton(text="6 Meses", callback_data="6 Meses"),
+        types.InlineKeyboardButton(text="Ayer", callback_data="ayer"),
+        types.InlineKeyboardButton(text="Semana Pasada", callback_data="semana"),
+        types.InlineKeyboardButton(text="Mes", callback_data="mes"),
+        types.InlineKeyboardButton(text="6 Meses", callback_data="6 meses"),
         types.InlineKeyboardButton(text="Volver", callback_data="volver"),
     ]
     builder.row(*botones)
@@ -84,3 +98,23 @@ async def fecha(callback: types.CallbackQuery, state: FSMContext):
         reply_markup=builder.as_markup(),
     )
     await state.set_state(HistorialFSM.fecha)
+
+
+@historial.callback_query(HistorialFSM.fecha)
+async def finalizar_historial(callback: types.CallbackQuery, state: FSMContext):
+
+    await callback.answer()
+    await callback.message.delete()
+    fecha = callback.data
+    await state.update_data(fecha=fecha)
+    data = await state.get_data()
+    logger.info(f"El usuario eligió fecha: {fecha}\n\n\n{data}\n\n\n")
+    respuesta = obtener_transacciones(data)
+    if respuesta["status"]:
+        logger.info(f"Resultados:\n\n{respuesta['registros']}")
+        await callback.message.answer(respuesta["registros"], parse_mode=ParseMode.HTML)
+        await state.clear()
+
+    else:
+        logging.error(f"Error {respuesta['mensaje']}")
+        await callback.message.answer(respuesta["mensaje"])

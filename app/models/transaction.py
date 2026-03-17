@@ -15,6 +15,7 @@ class Transaction(base.Base):
     )
     etiqueta: Mapped[str] = mapped_column(String(30), nullable=False)
     descripcion: Mapped[str] = mapped_column(String(100))
+    tipo: Mapped[str] = mapped_column(String(13))
     cuenta: Mapped[int] = mapped_column(ForeignKey("Cuentas.id"), nullable=False)
     fecha: Mapped[datetime] = mapped_column(DateTime)
     activa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

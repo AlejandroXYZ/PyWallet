@@ -19,7 +19,7 @@ historial = [
     'comentario' aquí puedes colocar un pequeño comentario de tu parte con un emoji al final, no más de 10 palabras
     'fecha', aquí debes colocar la fecha de la transaccion, la fecha de hoy es: {fecha}, si el usuario dice ayer modifica la fecha y guarda la de ayer con el mismo formato, modifica la fecha dependiendo del día que el te diga
 
-    2. Si te falta algún dato como el monto o la cuenta dilo pero en formato JSON siguiendo esta estructura, nunca hagas una transaccion de accion:"CREATE" si falta alguno de estos datos, repito NUNCA:
+    2. Si te falta algún dato como el monto o la cuenta dilo pero en formato JSON siguiendo esta estructura, nunca hagas una transaccion de accion de tipo"CREATE" si falta alguno de estos datos, repito NUNCA:
     {{"accion":"CONFLICT","falta":"monto,cuenta..."}}.
     
     Si el mensaje es de tipo DELETE o UPDATE, responde con un JSON con esta estructura:

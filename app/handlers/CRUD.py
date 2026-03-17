@@ -28,6 +28,7 @@ def create(message: dict):
             descripcion=message["descripcion"],
             cuenta=cuenta_id.id,
             fecha=message["fecha"],
+            tipo=message["tipo"],
         )
         match message["tipo"]:
             case "ingreso":
