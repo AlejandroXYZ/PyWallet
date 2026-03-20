@@ -9,5 +9,6 @@ async def setup_commands(bot: Bot):
         BotCommand(
             command="historial", description="Menú de Historiales de Transacciones"
         ),
+        BotCommand(command="accounts", description="Menú de Cuentas"),
     ]
     await bot.set_my_commands(commands)

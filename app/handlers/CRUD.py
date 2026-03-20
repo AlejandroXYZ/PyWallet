@@ -1,10 +1,9 @@
-import re
-from sqlalchemy.orm import Session
 from app.db.connection import get_db
 from app.models.account import Cuentas
 from app.models.transaction import Transaction
 from decimal import Decimal
 import logging
+from app.handlers.utils.cuentas import obtener_cuentas
 
 logger = logging.getLogger(name=__name__)
 
@@ -82,7 +81,7 @@ def delete(message: dict) -> dict:
 
         elif not transaccion_existente.activa:
             logger.info("Transacción ya Eliminada")
-            return {"status": False, "mensaje": f"Error, la transacción ya no existe"}
+            return {"status": False, "mensaje": "Error, la transacción ya no existe"}
 
         else:
             logger.error(
@@ -92,3 +91,26 @@ def delete(message: dict) -> dict:
                 "status": False,
                 "mensaje": "Error en la base de datos, la transaccion no se encuentra activa ni desactiva",
             }
+
+
+def new_account(message: dict) -> dict:
+    """Función para crear cuentas nuevas a través del comando /accounts"""
+
+    with get_db() as db:
+        cuentas = obtener_cuentas()
+        logger.info(cuentas)
+        for i in cuentas:
+            if message["nombre"] == i.nombre:
+                return {
+                    "status": False,
+                    "mensaje": f"Ya Tienes una cuenta con el nombre: {message['nombre']}",
+                }
+
+        new = Cuentas(nombre=message["nombre"], moneda=message["moneda"])
+        db.add(new)
+        db.commit()
+        db.refresh(new)
+        return {
+            "status": True,
+            "mensaje": f"Cuenta {new.nombre} creada correctamente, ID: {new.id}",
+        }
