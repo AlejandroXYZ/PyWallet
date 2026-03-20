@@ -5,3 +5,4 @@ class CuentaFSM(StatesGroup):
     nombre = State()
     moneda = State()
     consulta = State()
+    borrar = State()

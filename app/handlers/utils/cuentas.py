@@ -9,7 +9,7 @@ logger = logging.getLogger(name=__name__)
 
 def obtener_cuentas() -> list:
     with get_db() as db:
-        cuentas = db.execute(select(Cuentas)).scalars().all()
+        cuentas = db.execute(select(Cuentas).where(Cuentas.activa)).scalars().all()
         if cuentas:
             return cuentas
         else:

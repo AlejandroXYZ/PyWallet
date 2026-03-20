@@ -7,8 +7,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from app.handlers.utils.cuentas import obtener_cuentas, obtener_cuenta_especifica
 from app.handlers.FSM.cuenta_fsm import CuentaFSM
 import logging
-from app.handlers.CRUD import new_account
+from app.handlers.CRUD import new_account, delete_account
 from aiogram.enums import ParseMode
+
 
 account = Router(name="accounts")
 logger = logging.getLogger(name=__name__)
@@ -66,6 +67,44 @@ async def consultando_cuenta(callback: CallbackQuery, state: CuentaFSM):
     else:
         await callback.message.answer(cuenta["mensaje"])
         await state.clear()
+        return
+
+
+@account.callback_query(F.data == "borrar")
+async def borrar_cuenta(callback: CallbackQuery, state: CuentaFSM):
+    await callback.answer()
+    logger.info("El usuario elijió borrar una cuenta")
+    mis_cuentas = obtener_cuentas()
+    builder = InlineKeyboardBuilder()
+    if mis_cuentas:
+        for i in mis_cuentas:
+            builder.button(text=i.nombre, callback_data=str(i.id))
+        builder.adjust(2)
+        await callback.message.edit_text(
+            text="Selecciona la Cuenta que deseas borrar",
+            reply_markup=builder.as_markup(),
+        )
+        await state.set_state(CuentaFSM.borrar)
+
+
+@account.callback_query(CuentaFSM.borrar)
+async def borrando(callback: CallbackQuery, state: CuentaFSM):
+
+    logger.info(f"El usuario quiere borrar la cuenta de id {callback.data}")
+    await callback.answer()
+    await callback.message.delete()
+    cuenta = int(callback.data)
+    logger.info("Eliminando Cuenta")
+    borrar = delete_account(cuenta)
+
+    if borrar["status"]:
+        logger.info("Cuenta Eliminada con éxito")
+        await callback.message.answer(borrar["mensaje"])
+        await state.clear()
+        return
+    else:
+        logger.error(borrar["mensaje"])
+        await callback.message.answer(borrar["mensaje"])
         return
 
 

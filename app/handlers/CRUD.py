@@ -114,3 +114,20 @@ def new_account(message: dict) -> dict:
             "status": True,
             "mensaje": f"Cuenta {new.nombre} creada correctamente, ID: {new.id}",
         }
+
+
+def delete_account(id: int) -> dict:
+    with get_db() as db:
+        cuenta_existente = db.query(Cuentas).where(Cuentas.id == id).first()
+
+        if not cuenta_existente:
+            return {"status": False, "mensaje": "Error, la Cuenta no existe"}
+
+        cuenta_existente.activa = False
+        db.commit()
+        db.refresh(cuenta_existente)
+        return {
+            "status": True,
+            "cuenta": cuenta_existente,
+            "mensaje": f"Eliminada la cuenta {cuenta_existente.nombre} con Éxito",
+        }
