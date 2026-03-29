@@ -1,7 +1,7 @@
 from operator import call
 from aiogram import Router, types
 from aiogram.methods import edit_chat_invite_link
-from aiogram.types import InlineKeyboardButton, Message, reply_keyboard_markup
+from aiogram.types import InlineKeyboardButton, Message, message, reply_keyboard_markup
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
 from app.handlers.FSM.historial_fsm import HistorialFSM
@@ -22,6 +22,10 @@ def get_keyboard_historial():
     builder = InlineKeyboardBuilder()
     cuentas = obtener_cuentas()
     botones = []
+    if not cuentas:
+        logger.info("No Hay Cuentas Creadas")
+        return False
+
     for i in cuentas:
         boton = types.InlineKeyboardButton(
             text=i.nombre, callback_data=f"{i.id}:{i.nombre}"
@@ -34,11 +38,16 @@ def get_keyboard_historial():
 
 @historial.message(Command("historial"))
 async def cmd_historial(mensaje: Message, state: FSMContext):
-    logger.info("Capturando mensaje")
-    await mensaje.answer(
-        "Qué cuenta deseas consultar??", reply_markup=get_keyboard_historial()
-    )
-    await state.set_state(HistorialFSM.cuenta)
+    try:
+        logger.info("Capturando mensaje")
+        keyboard = get_keyboard_historial()
+        if not keyboard:
+            await mensaje.answer("No hay Cuentas Creadas, Crea una Primero")
+        else:
+            await mensaje.answer("Qué cuenta deseas consultar??", reply_markup=keyboard)
+            await state.set_state(HistorialFSM.cuenta)
+    except Exception as e:
+        logger.error(f"Ha ocurrido un error:\n\n{e}\n\n")
 
 
 @historial.callback_query(HistorialFSM.cuenta)

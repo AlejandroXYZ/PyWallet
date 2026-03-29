@@ -25,7 +25,9 @@ async def lifespan():
     if environment == "development":
         logger.info("Modo Desarrollo")
         await bot.delete_webhook(drop_pending_updates=True)
-        polling_task = asyncio.create_task(dp.start_polling(bot))
+        polling_task = asyncio.create_task(
+            dp.start_polling(bot, allowed_updates=["message", "callback_query"])
+        )
         yield
         polling_task.cancel()
 
@@ -35,6 +37,7 @@ async def lifespan():
         await bot.set_webhook(
             url=webhook_url,
             drop_pending_updates=(True),
+            allowed_updates=["message", "callback_query"],
         )
 
         yield

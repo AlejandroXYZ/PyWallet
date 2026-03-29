@@ -99,12 +99,13 @@ def new_account(message: dict) -> dict:
     with get_db() as db:
         cuentas = obtener_cuentas()
         logger.info(cuentas)
-        for i in cuentas:
-            if message["nombre"] == i.nombre:
-                return {
-                    "status": False,
-                    "mensaje": f"Ya Tienes una cuenta con el nombre: {message['nombre']}",
-                }
+        if cuentas:
+            for i in cuentas:
+                if message["nombre"] == i.nombre:
+                    return {
+                        "status": False,
+                        "mensaje": f"Ya Tienes una cuenta con el nombre: {message['nombre']}",
+                    }
 
         new = Cuentas(nombre=message["nombre"], moneda=message["moneda"])
         db.add(new)

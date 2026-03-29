@@ -24,6 +24,8 @@ historial = [
     
     Si el mensaje es de tipo DELETE o UPDATE, responde con un JSON con esta estructura:
     {{"accion":"DELETE","id":1234,"cuenta":"BNC"}}
+    
+    En Cuanto a las etiquetas solo puedes colocar una de estas, tu la debes elegir según el contexto: Transporte,Compras,Hogar,Ropa,Autodesarrollo,Comestibles,Entretenimiento,Recarga,Sueldo,Prestamos,Transferencia.
     """,
     }
 ]

@@ -2,14 +2,14 @@ from operator import call
 from typing import Text
 from aiogram import F, Router, types
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, Message, message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from app.handlers.utils.cuentas import obtener_cuentas, obtener_cuenta_especifica
 from app.handlers.FSM.cuenta_fsm import CuentaFSM
 import logging
 from app.handlers.CRUD import new_account, delete_account
 from aiogram.enums import ParseMode
-
+from app.handlers.utils.dolar import convertidor
 
 account = Router(name="accounts")
 logger = logging.getLogger(name=__name__)
@@ -18,9 +18,7 @@ logger = logging.getLogger(name=__name__)
 def seleccion_opciones():
     builder = InlineKeyboardBuilder()
     builder.row(
-        types.InlineKeyboardButton(
-            text="Consultar Mis Cuentas", callback_data="mis_cuentas"
-        ),
+        types.InlineKeyboardButton(text="Mis Cuentas", callback_data="mis_cuentas"),
         types.InlineKeyboardButton(text="Crear Cuenta", callback_data="nueva"),
         types.InlineKeyboardButton(text="Borrar Cuenta", callback_data="borrar"),
     )
@@ -61,7 +59,13 @@ async def consultando_cuenta(callback: CallbackQuery, state: CuentaFSM):
     await callback.message.delete()
     if cuenta["status"]:
         cuenta_encontrada = cuenta["cuenta"]
-        respuesta = f"<b>{cuenta_encontrada.nombre}</b>\n\n<b>ID: {cuenta_encontrada.id}</b>\n<b>Saldo:</b> {cuenta_encontrada.saldo}\n<b>Moneda:</b> {cuenta_encontrada.moneda}"
+        conversion = convertidor(
+            moneda=cuenta_encontrada.moneda, saldo=cuenta_encontrada.saldo
+        )
+        if not conversion["status"]:
+            await callback.message.answer(conversion["mensaje"])
+        respuesta = f"<b>{cuenta_encontrada.nombre}</b>\n\n<b>ID: {cuenta_encontrada.id}</b>\n<b>Saldo {cuenta_encontrada.moneda}:</b> {cuenta_encontrada.saldo}\nSaldo_{conversion['moneda']}: {conversion['saldo']}"
+
         await callback.message.answer(respuesta, parse_mode=ParseMode.HTML)
         await state.clear()
     else:
@@ -146,6 +150,7 @@ async def crear_cuenta(message: Message, state: CuentaFSM):
             logger.info("Creando Cuenta")
             await message.answer(cuenta["mensaje"])
             logger.info("Cuenta Creada Correctamente")
+            await state.clear()
             return
         else:
             logger.error(cuenta["mensaje"])

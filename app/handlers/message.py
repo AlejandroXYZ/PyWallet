@@ -1,5 +1,5 @@
-from aiogram import Router
-from aiogram.types import Message
+from aiogram import Router, F
+from aiogram.types import Message, message
 from app.IA.groq import IA_Response
 import json
 import app.handlers.CRUD as CRUD
@@ -12,7 +12,7 @@ logger = logging.getLogger(name=__name__)
 user_id = int(os.getenv("ID_USUARIO", 0))
 
 
-@IA_message.message()
+@IA_message.message(F.text.regexp(r"[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]"))
 async def analizar_mensaje(mensaje: Message):
     logger.info(f"user id: {user_id}\nUser mensaje: {mensaje.from_user.id}")
     if mensaje.from_user.id == user_id:
