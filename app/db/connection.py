@@ -1,6 +1,8 @@
 from contextlib import contextmanager
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from app.models.account import Cuentas
+from app.models.transaction import Transaction
 import os
 
 
