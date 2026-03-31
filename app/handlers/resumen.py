@@ -14,9 +14,9 @@ logger = logging.getLogger(name=__name__)
 
 @resumen.message(Command("resumen"))
 async def obtener_resumen(message: Message):
-    dolar = dolar_hoy()
-    cuentas = obtener_cuentas()
-    total = obtener_total()
+    dolar = await dolar_hoy()
+    cuentas = await obtener_cuentas()
+    total = await obtener_total()
     if not total:
         total = "Error, no se pudo obtener los totales"
     texto_cuentas = ""

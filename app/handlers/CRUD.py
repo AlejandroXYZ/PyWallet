@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from app.db.connection import get_db
 from app.models.account import Cuentas
 from app.models.transaction import Transaction
@@ -8,13 +9,13 @@ from app.handlers.utils.cuentas import obtener_cuentas
 logger = logging.getLogger(name=__name__)
 
 
-def create(message: dict):
-    with get_db() as db:
+async def create(message: dict):
+    async with get_db() as db:
         logger.info("Verificando existencia de la cuenta")
 
-        cuenta_id = (
-            db.query(Cuentas).filter(message["cuenta"] == Cuentas.nombre).first()
-        )
+        query = select(Cuentas).filter(message["cuenta"] == Cuentas.nombre)
+        busqueda_cuenta = await db.execute(query)
+        cuenta_id = busqueda_cuenta.scalar_one_or_none()
 
         if not cuenta_id:
             return False
@@ -43,36 +44,36 @@ def create(message: dict):
                 return False
 
         db.add(transaccion)
-        db.commit()
-        db.refresh(transaccion)
-        db.refresh(cuenta_id)
+        await db.commit()
+        await db.refresh(transaccion)
+        await db.refresh(cuenta_id)
         return [transaccion.id, cuenta_id.saldo, cuenta_id.nombre]
 
 
-def delete(message: dict) -> dict:
+async def delete(message: dict) -> dict:
     r"""Función de Borrado, no borra la transacción solo cambia entre un estado activa o desactiva ocultando su existencia"""
-    with get_db() as db:
+    async with get_db() as db:
         logger.info("Verificando ID de la transaccion en la DB")
-        transaccion_existente = (
-            db.query(Transaction).filter(Transaction.id == message["id"]).first()
-        )
+        query = select(Transaction).filter(Transaction.id == message["id"])
+        resultado = await db.execute(query)
+        transaccion_existente = resultado.scalar_one_or_none()
         if not transaccion_existente:
             logger.error("El ID de la transaccion no existe")
             return {"status": False, "mensaje": "El ID de la transacción no existe"}
 
         logger.info("Buscando Cuenta de la transaccion")
-        cuenta = (
-            db.query(Cuentas).filter(Cuentas.id == transaccion_existente.cuenta).first()
-        )
+        query = select(Cuentas).filter(Cuentas.id == transaccion_existente.cuenta)
+        resultado = await db.execute(query)
+        cuenta = resultado.scalar_one_or_none()
         logger.info(f"Cuenta Encontrada: {cuenta.nombre}")
 
         if transaccion_existente.activa:
             logger.info("Transaccion Activa, Eliminando...")
             transaccion_existente.activa = False
             cuenta.saldo = cuenta.saldo - transaccion_existente.monto
-            db.commit()
-            db.refresh(transaccion_existente)
-            db.refresh(cuenta)
+            await db.commit()
+            await db.refresh(transaccion_existente)
+            await db.refresh(cuenta)
             logger.info("Hecho")
             return {
                 "status": True,
@@ -93,11 +94,11 @@ def delete(message: dict) -> dict:
             }
 
 
-def new_account(message: dict) -> dict:
+async def new_account(message: dict) -> dict:
     """Función para crear cuentas nuevas a través del comando /accounts"""
 
-    with get_db() as db:
-        cuentas = obtener_cuentas()
+    async with get_db() as db:
+        cuentas = await obtener_cuentas()
         logger.info(cuentas)
         if cuentas:
             for i in cuentas:
@@ -109,24 +110,26 @@ def new_account(message: dict) -> dict:
 
         new = Cuentas(nombre=message["nombre"], moneda=message["moneda"])
         db.add(new)
-        db.commit()
-        db.refresh(new)
+        await db.commit()
+        await db.refresh(new)
         return {
             "status": True,
             "mensaje": f"Cuenta {new.nombre} creada correctamente, ID: {new.id}",
         }
 
 
-def delete_account(id: int) -> dict:
-    with get_db() as db:
-        cuenta_existente = db.query(Cuentas).where(Cuentas.id == id).first()
+async def delete_account(id: int) -> dict:
+    async with get_db() as db:
+        query = select(Cuentas).filter(Cuentas.id == id)
+        resultado = await db.execute(query)
+        cuenta_existente = resultado.scalar_one_or_none()
 
         if not cuenta_existente:
             return {"status": False, "mensaje": "Error, la Cuenta no existe"}
 
         cuenta_existente.activa = False
-        db.commit()
-        db.refresh(cuenta_existente)
+        await db.commit()
+        await db.refresh(cuenta_existente)
         return {
             "status": True,
             "cuenta": cuenta_existente,

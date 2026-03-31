@@ -9,18 +9,21 @@ import logging
 logger = logging.getLogger(name=__name__)
 
 
-def obtener_cuentas() -> list | bool:
-    with get_db() as db:
-        cuentas = db.execute(select(Cuentas).where(Cuentas.activa)).scalars().all()
+async def obtener_cuentas() -> list | bool:
+    async with get_db() as db:
+        query = await db.execute(select(Cuentas).where(Cuentas.activa))
+        cuentas = query.scalars().all()
         if cuentas:
             return cuentas
         else:
             return False
 
 
-def obtener_cuenta_especifica(id: int) -> dict:
-    with get_db() as db:
-        cuenta = db.query(Cuentas).where(id == Cuentas.id and Cuentas.activa).first()
+async def obtener_cuenta_especifica(id: int) -> dict:
+    async with get_db() as db:
+        cuenta = await db.execute(
+            select(Cuentas).filter(id == Cuentas.id and Cuentas.activa)
+        ).scalar_one_or_none()
 
         if not cuenta:
             logger.error("La cuenta no fue encontrada por su ID")
@@ -29,13 +32,14 @@ def obtener_cuenta_especifica(id: int) -> dict:
         return {"status": True, "mensaje": "Cuenta encontrada", "cuenta": cuenta}
 
 
-def obtener_total():
-    with get_db() as db:
-        query = (
-            db.query(Cuentas.moneda, func.sum(Cuentas.saldo).label("Saldo Total"))
-            .group_by(Cuentas.moneda)
-            .all()
-        )
+async def obtener_total():
+    async with get_db() as db:
+        query = select(
+            Cuentas.moneda, func.sum(Cuentas.saldo).label("saldo_total")
+        ).group_by(Cuentas.moneda)
+
+        resultado = await db.execute(query)
+        query = resultado.all()
 
         texto = ""
         suma = {}

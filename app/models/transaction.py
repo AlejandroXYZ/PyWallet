@@ -1,6 +1,6 @@
 from decimal import Decimal
 from sqlalchemy import String, ForeignKey, Numeric, Boolean
-from sqlalchemy.orm import Mapped, mapped_column, validates
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from app.db import base
 import datetime
 from sqlalchemy import DateTime
@@ -33,3 +33,7 @@ class Transaction(base.Base):
             except ValueError:
                 raise ValueError(f"La fecha '{valor}' no tiene el formato correcto")
         raise TypeError("La fecha deb ser un string o un objeto datetime")
+
+    cuenta_name: Mapped["Cuentas"] = relationship(
+        "Cuentas", back_populates="transacciones"
+    )

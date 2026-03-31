@@ -35,7 +35,7 @@ async def menu_cuentas(message: Message):
 async def ver_cuentas(callback: CallbackQuery, state: CuentaFSM):
     logger.info("El usuario seleccionó Consultar sus cuentas")
     await callback.answer()
-    mis_cuentas = obtener_cuentas()
+    mis_cuentas = await obtener_cuentas()
     builder = InlineKeyboardBuilder()
     if mis_cuentas:
         for i in mis_cuentas:
@@ -55,7 +55,7 @@ async def ver_cuentas(callback: CallbackQuery, state: CuentaFSM):
 async def consultando_cuenta(callback: CallbackQuery, state: CuentaFSM):
     await callback.answer()
     id = int(callback.data)
-    cuenta = obtener_cuenta_especifica(id)
+    cuenta = await obtener_cuenta_especifica(id)
     await callback.message.delete()
     if cuenta["status"]:
         cuenta_encontrada = cuenta["cuenta"]
@@ -78,7 +78,7 @@ async def consultando_cuenta(callback: CallbackQuery, state: CuentaFSM):
 async def borrar_cuenta(callback: CallbackQuery, state: CuentaFSM):
     await callback.answer()
     logger.info("El usuario elijió borrar una cuenta")
-    mis_cuentas = obtener_cuentas()
+    mis_cuentas = await obtener_cuentas()
     builder = InlineKeyboardBuilder()
     if mis_cuentas:
         for i in mis_cuentas:
@@ -99,7 +99,7 @@ async def borrando(callback: CallbackQuery, state: CuentaFSM):
     await callback.message.delete()
     cuenta = int(callback.data)
     logger.info("Eliminando Cuenta")
-    borrar = delete_account(cuenta)
+    borrar = await delete_account(cuenta)
 
     if borrar["status"]:
         logger.info("Cuenta Eliminada con éxito")
@@ -145,7 +145,7 @@ async def crear_cuenta(message: Message, state: CuentaFSM):
         moneda_data = moneda.strip().upper()
         await state.update_data(moneda=moneda_data)
         data = await state.get_data()
-        cuenta = new_account(data)
+        cuenta = await new_account(data)
         if cuenta["status"]:
             logger.info("Creando Cuenta")
             await message.answer(cuenta["mensaje"])

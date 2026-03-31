@@ -16,12 +16,12 @@ user_id = int(os.getenv("ID_USUARIO", 0))
 async def analizar_mensaje(mensaje: Message):
     logger.info(f"user id: {user_id}\nUser mensaje: {mensaje.from_user.id}")
     if mensaje.from_user.id == user_id:
-        respuesta = IA_Response(mensaje.text)
+        respuesta = await IA_Response(mensaje.text)
         json_dict = json.loads(respuesta)
         logger.info(f"respuesta de Groq:\n\n{json_dict}")
         match json_dict["accion"]:
             case "CREATE":
-                transaccion = CRUD.create(json_dict)
+                transaccion = await CRUD.create(json_dict)
                 if transaccion:
                     answer = f"Transaccion Completada id:{transaccion[0]}\n\n{json_dict['comentario']}\n\nSaldo en tu cuenta {transaccion[2]}: {transaccion[1]}"
                     logger.info(answer)
@@ -32,7 +32,7 @@ async def analizar_mensaje(mensaje: Message):
                     await mensaje.answer(answer)
 
             case "DELETE":
-                transaccion = CRUD.delete(json_dict)
+                transaccion = await CRUD.delete(json_dict)
                 if transaccion["status"]:
                     await mensaje.answer(transaccion["mensaje"])
                 else:

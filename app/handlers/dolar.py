@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @dolar_bcv.message(Command("dolar"))
 async def dolar(message: Message):
-    dolar = dolar_hoy()
+    dolar = await dolar_hoy()
     if dolar["status"]:
         await message.answer(
             f"<b>PRECIO DEL DOLAR HOY BCV</b>\n\n{dolar['precio']}\n\n",

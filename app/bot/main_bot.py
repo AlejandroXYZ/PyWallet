@@ -9,7 +9,7 @@ from app.bot.menu_commands import setup_commands
 from app.handlers.help import help
 from app.handlers.cuentas import account
 from app.handlers.resumen import resumen
-from app.handlers.data import data
+from app.handlers.data import data_router
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,6 @@ async def setup_bot():
     dp.include_router(resumen)
     dp.include_router(historial.historial)
     dp.include_router(IA_message)
-    dp.include_router(data)
+    dp.include_router(data_router)
     await setup_commands(bot=bot)
     return bot, dp

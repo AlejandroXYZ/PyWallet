@@ -9,9 +9,12 @@ import logging
 logger = logging.getLogger(name=__name__)
 
 
-def obtener_transacciones(data):
-    with get_db() as db:
-        cuenta_id = db.query(Cuentas).filter(data["cuenta"] == Cuentas.id).first()
+async def obtener_transacciones(data):
+    async with get_db() as db:
+        query = select(Cuentas).filter(data["cuenta"] == Cuentas.id)
+        resultado = await db.execute(query)
+        cuenta_id = resultado.scalar_one_or_none()
+
         if not cuenta_id:
             return {"status": False, "mensaje": "Error: La cuenta no existe"}
 
@@ -53,7 +56,7 @@ def obtener_transacciones(data):
             .order_by(Transaction.fecha.desc())
             .limit(int(data["cantidad"]))
         )
-        resultado = db.scalars(query)
+        resultado = await db.scalars(query)
         registros = resultado.all()
         if not registros:
             return {"status": False, "mensaje": "No hay registros de Transacciones"}

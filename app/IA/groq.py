@@ -1,4 +1,4 @@
-from groq import Groq
+from groq import AsyncGroq
 import logging
 import os
 import datetime
@@ -33,7 +33,7 @@ historial = [
 logger = logging.getLogger(name=__name__)
 
 
-def IA_Response(message: str):
+async def IA_Response(message: str):
 
     logger.info("Iniciando Petición a Groq")
     global historial
@@ -44,9 +44,9 @@ def IA_Response(message: str):
     historial.append({"role": "user", "content": message})
 
     if key:
-        client = Groq(api_key=key)
+        client = AsyncGroq(api_key=key)
 
-        completion = client.chat.completions.create(
+        completion = await client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=historial,
             temperature=0.7,

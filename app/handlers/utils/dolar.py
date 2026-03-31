@@ -1,4 +1,4 @@
-import requests
+import httpx
 import os
 import logging
 from decimal import Decimal
@@ -7,27 +7,27 @@ url = os.getenv("API_DOLAR")
 logger = logging.getLogger(__name__)
 
 
-def dolar_hoy():
-    try:
-        r = requests.get(url=url)
-        respuesta = r.json()
-        logger.info("Dolar Obtenido Correctamente")
-        return {"status": True, "precio": respuesta["promedio"]}
-    except Exception as e:
-        logger.error(
-            f"Ha Ocurrido un Error mientras se obtenia el precio del dólar:\n\n {e} \n\n"
-        )
-        return {
-            "status": False,
-            "mensaje": "Error, no se pudo obtener el precio del Dólar",
-        }
+async def dolar_hoy():
+    async with httpx.AsyncClient() as client:
+        try:
+            r = await client.get(url=url)
+            respuesta = r.json()
+            logger.info("Dolar Obtenido Correctamente")
+            return {"status": True, "precio": respuesta["promedio"]}
+        except Exception as e:
+            logger.error(
+                f"Ha Ocurrido un Error mientras se obtenia el precio del dólar:\n\n {e} \n\n"
+            )
+            return {
+                "status": False,
+                "mensaje": "Error, no se pudo obtener el precio del Dólar",
+            }
 
 
-def convertidor(moneda: str, saldo) -> dict:
-
+async def convertidor(moneda: str, saldo) -> dict:
     try:
         saldo = Decimal(saldo)
-        bcv = dolar_hoy()
+        bcv = await dolar_hoy()
         dolar = Decimal(bcv["precio"])
         match moneda:
             case "VES":
