@@ -6,8 +6,8 @@ from app.models.transaction import Transaction
 from app.models.account import Cuentas
 
 
-def generar_csv():
-    with get_db() as db:
+async def generar_csv():
+    async with get_db() as db:
         objeto_ram = io.StringIO()
         escritor = csv.writer(objeto_ram)
 
@@ -40,7 +40,8 @@ def generar_csv():
             .order_by(Transaction.fecha.desc())
         )
 
-        resultados = db.execute(query).fetchall()
-        escritor.writerows(resultados)
+        resultados = await db.execute(query)
+        rows = resultados.fetchall()
+        escritor.writerows(rows)
 
         return objeto_ram.getvalue().encode("utf-8")

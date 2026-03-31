@@ -15,3 +15,6 @@ class Cuentas(Base):
     transacciones: Mapped[list["Transaction"]] = relationship(
         "Transaction", back_populates="cuenta_name"
     )
+    propietario: Mapped[BigInteger] = mapped_column(
+        ForeignKey("Usuarios.id"), nullable=False
+    )

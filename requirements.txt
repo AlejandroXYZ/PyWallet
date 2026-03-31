@@ -1,9 +1,8 @@
 alembic
-pydantic
-pydantic-settings
+alembic-postgresql-enum
 sqlalchemy
-psycopg2-binary
 aiogram>=3.0.0
 groq
 python-dateutil
 requests
+asyncpg

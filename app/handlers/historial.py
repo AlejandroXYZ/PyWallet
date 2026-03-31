@@ -17,10 +17,10 @@ historial = Router(name="historial")
 logger = logging.getLogger(name=__name__)
 
 
-def get_keyboard_historial():
+async def get_keyboard_historial():
     logging.info("Mostrando Cuentas al Usuario")
     builder = InlineKeyboardBuilder()
-    cuentas = obtener_cuentas()
+    cuentas = await obtener_cuentas()
     botones = []
     if not cuentas:
         logger.info("No Hay Cuentas Creadas")
@@ -118,7 +118,7 @@ async def finalizar_historial(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(fecha=fecha)
     data = await state.get_data()
     logger.info(f"El usuario eligió fecha: {fecha}\n\n\n{data}\n\n\n")
-    respuesta = obtener_transacciones(data)
+    respuesta = await obtener_transacciones(data)
     if respuesta["status"]:
         logger.info(f"Resultados:\n\n{respuesta['registros']}")
         await callback.message.answer(respuesta["registros"], parse_mode=ParseMode.HTML)

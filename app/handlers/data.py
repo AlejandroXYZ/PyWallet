@@ -3,7 +3,7 @@ from aiogram.filters import Command
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 import logging
 from aiogram.types import BufferedInputFile, CallbackQuery, Message
-from app.handlers.utils.csv import generar_csv
+from app.handlers.utils.exportar import generar_csv
 
 logger = logging.getLogger(__name__)
 data_router = Router(name="data")
@@ -36,7 +36,14 @@ async def estadisticas(callback: types.CallbackQuery):
 @data_router.callback_query(F.data == "csv")
 async def csv(callback: CallbackQuery):
     await callback.answer("Generando CSV")
-    archivo = generar_csv()
+    archivo = await generar_csv()
     bufer = BufferedInputFile(file=archivo, filename="Historial.csv")
     await callback.message.delete()
     await callback.message.answer_document(document=bufer, caption="Historial CSV")
+
+
+@data_router.callback_query(F.data == "sql")
+async def sql(callback: CallbackQuery):
+    await callback.answer("Generando SQL")
+    await callback.message.delete()
+    await callback.message.answer("Opción no Disponible por Ahora")
