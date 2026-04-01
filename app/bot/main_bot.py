@@ -10,6 +10,7 @@ from app.handlers.help import help
 from app.handlers.cuentas import account
 from app.handlers.resumen import resumen
 from app.handlers.data import data_router
+from app.handlers.dolar import dolar_bcv
 import logging
 
 logger = logging.getLogger(__name__)
@@ -33,5 +34,6 @@ async def setup_bot():
     dp.include_router(historial.historial)
     dp.include_router(IA_message)
     dp.include_router(data_router)
+    dp.include_router(dolar_bcv)
     await setup_commands(bot=bot)
     return bot, dp

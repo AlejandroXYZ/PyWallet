@@ -8,7 +8,7 @@ class Cuentas(Base):
     __tablename__ = "Cuentas"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    nombre: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
+    nombre: Mapped[str] = mapped_column(String(50), nullable=False)
     saldo: Mapped[Decimal] = mapped_column(Numeric(8, 2), default="0.00")
     moneda: Mapped[str] = mapped_column(String(4), nullable=False)
     activa: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

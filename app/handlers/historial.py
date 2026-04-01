@@ -4,23 +4,28 @@ from aiogram.methods import edit_chat_invite_link
 from aiogram.types import InlineKeyboardButton, Message, message, reply_keyboard_markup
 from aiogram.filters import Command
 from aiogram.enums import ParseMode
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.FSM.historial_fsm import HistorialFSM
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from app.handlers.utils.cuentas import obtener_cuentas
 from app.handlers.utils.transacciones import obtener_transacciones
 import logging
+from app.middleware.dbsession import DBSessionMiddleware
+from app.db.connection import SessionLocal
 
 
 historial = Router(name="historial")
+historial.message.middleware(DBSessionMiddleware(SessionLocal))
+historial.callback_query.middleware(DBSessionMiddleware(SessionLocal))
 
 logger = logging.getLogger(name=__name__)
 
 
-async def get_keyboard_historial():
+async def get_keyboard_historial(db: AsyncSession):
     logging.info("Mostrando Cuentas al Usuario")
     builder = InlineKeyboardBuilder()
-    cuentas = await obtener_cuentas()
+    cuentas = await obtener_cuentas(db)
     botones = []
     if not cuentas:
         logger.info("No Hay Cuentas Creadas")
@@ -37,10 +42,10 @@ async def get_keyboard_historial():
 
 
 @historial.message(Command("historial"))
-async def cmd_historial(mensaje: Message, state: FSMContext):
+async def cmd_historial(mensaje: Message, state: FSMContext, db: AsyncSession):
     try:
         logger.info("Capturando mensaje")
-        keyboard = get_keyboard_historial()
+        keyboard = await get_keyboard_historial(db)
         if not keyboard:
             await mensaje.answer("No hay Cuentas Creadas, Crea una Primero")
         else:
@@ -110,7 +115,9 @@ async def fecha(callback: types.CallbackQuery, state: FSMContext):
 
 
 @historial.callback_query(HistorialFSM.fecha)
-async def finalizar_historial(callback: types.CallbackQuery, state: FSMContext):
+async def finalizar_historial(
+    callback: types.CallbackQuery, state: FSMContext, db: AsyncSession
+):
 
     await callback.answer()
     await callback.message.delete()
@@ -118,7 +125,7 @@ async def finalizar_historial(callback: types.CallbackQuery, state: FSMContext):
     await state.update_data(fecha=fecha)
     data = await state.get_data()
     logger.info(f"El usuario eligió fecha: {fecha}\n\n\n{data}\n\n\n")
-    respuesta = await obtener_transacciones(data)
+    respuesta = await obtener_transacciones(data, db)
     if respuesta["status"]:
         logger.info(f"Resultados:\n\n{respuesta['registros']}")
         await callback.message.answer(respuesta["registros"], parse_mode=ParseMode.HTML)

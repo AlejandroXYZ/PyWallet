@@ -1,17 +1,21 @@
-from operator import call
-from typing import Text
 from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, InlineKeyboardButton, Message, message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.utils.cuentas import obtener_cuentas, obtener_cuenta_especifica
 from app.handlers.FSM.cuenta_fsm import CuentaFSM
 import logging
 from app.handlers.CRUD import new_account, delete_account
 from aiogram.enums import ParseMode
 from app.handlers.utils.dolar import convertidor
+from app.middleware.dbsession import DBSessionMiddleware
+from app.db.connection import SessionLocal
 
 account = Router(name="accounts")
+account.message.middleware(DBSessionMiddleware(SessionLocal))
+account.callback_query.middleware(DBSessionMiddleware(SessionLocal))
+
 logger = logging.getLogger(name=__name__)
 
 
@@ -32,10 +36,10 @@ async def menu_cuentas(message: Message):
 
 
 @account.callback_query(F.data == "mis_cuentas")
-async def ver_cuentas(callback: CallbackQuery, state: CuentaFSM):
+async def ver_cuentas(callback: CallbackQuery, state: CuentaFSM, db: AsyncSession):
     logger.info("El usuario seleccionó Consultar sus cuentas")
     await callback.answer()
-    mis_cuentas = await obtener_cuentas()
+    mis_cuentas = await obtener_cuentas(db)
     builder = InlineKeyboardBuilder()
     if mis_cuentas:
         for i in mis_cuentas:
@@ -52,14 +56,16 @@ async def ver_cuentas(callback: CallbackQuery, state: CuentaFSM):
 
 
 @account.callback_query(CuentaFSM.consulta)
-async def consultando_cuenta(callback: CallbackQuery, state: CuentaFSM):
+async def consultando_cuenta(
+    callback: CallbackQuery, state: CuentaFSM, db: AsyncSession
+):
     await callback.answer()
     id = int(callback.data)
-    cuenta = await obtener_cuenta_especifica(id)
+    cuenta = await obtener_cuenta_especifica(id, db)
     await callback.message.delete()
     if cuenta["status"]:
         cuenta_encontrada = cuenta["cuenta"]
-        conversion = convertidor(
+        conversion = await convertidor(
             moneda=cuenta_encontrada.moneda, saldo=cuenta_encontrada.saldo
         )
         if not conversion["status"]:
@@ -75,10 +81,12 @@ async def consultando_cuenta(callback: CallbackQuery, state: CuentaFSM):
 
 
 @account.callback_query(F.data == "borrar")
-async def borrar_cuenta(callback: CallbackQuery, state: CuentaFSM):
+async def borrar_cuenta(
+    callback: CallbackQuery, state: CuentaFSM, db: async_sessionmaker
+):
     await callback.answer()
     logger.info("El usuario elijió borrar una cuenta")
-    mis_cuentas = await obtener_cuentas()
+    mis_cuentas = await obtener_cuentas(db)
     builder = InlineKeyboardBuilder()
     if mis_cuentas:
         for i in mis_cuentas:
@@ -92,14 +100,14 @@ async def borrar_cuenta(callback: CallbackQuery, state: CuentaFSM):
 
 
 @account.callback_query(CuentaFSM.borrar)
-async def borrando(callback: CallbackQuery, state: CuentaFSM):
+async def borrando(callback: CallbackQuery, state: CuentaFSM, db: async_sessionmaker):
 
     logger.info(f"El usuario quiere borrar la cuenta de id {callback.data}")
     await callback.answer()
     await callback.message.delete()
     cuenta = int(callback.data)
     logger.info("Eliminando Cuenta")
-    borrar = await delete_account(cuenta)
+    borrar = await delete_account(cuenta, db)
 
     if borrar["status"]:
         logger.info("Cuenta Eliminada con éxito")
@@ -138,14 +146,14 @@ async def establecer_moneda(message: Message, state: CuentaFSM):
 
 
 @account.message(CuentaFSM.moneda)
-async def crear_cuenta(message: Message, state: CuentaFSM):
+async def crear_cuenta(message: Message, state: CuentaFSM, db: AsyncSession):
     logger.info(f"El usuario escribió: {message.text}")
     moneda = message.text
     if len(moneda) <= 4 and len(moneda) >= 3:
         moneda_data = moneda.strip().upper()
         await state.update_data(moneda=moneda_data)
         data = await state.get_data()
-        cuenta = await new_account(data)
+        cuenta = await new_account(data, db=db)
         if cuenta["status"]:
             logger.info("Creando Cuenta")
             await message.answer(cuenta["mensaje"])

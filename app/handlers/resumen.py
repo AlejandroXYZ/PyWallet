@@ -2,21 +2,23 @@ import logging
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.utils.dolar import dolar_hoy
 from app.handlers.utils.cuentas import obtener_cuentas, obtener_total
 from aiogram.enums import ParseMode
-import json
-
+from app.middleware.dbsession import DBSessionMiddleware
+from app.db.connection import SessionLocal
 
 resumen = Router(name="resumen")
 logger = logging.getLogger(name=__name__)
+resumen.message.middleware(DBSessionMiddleware(SessionLocal))
 
 
 @resumen.message(Command("resumen"))
-async def obtener_resumen(message: Message):
+async def obtener_resumen(message: Message, db: AsyncSession):
     dolar = await dolar_hoy()
-    cuentas = await obtener_cuentas()
-    total = await obtener_total()
+    cuentas = await obtener_cuentas(db)
+    total = await obtener_total(db)
     if not total:
         total = "Error, no se pudo obtener los totales"
     texto_cuentas = ""
