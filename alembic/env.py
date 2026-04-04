@@ -9,6 +9,7 @@ from app.db.base import Base
 from app.models.account import Cuentas
 from app.models.transaction import Transaction
 from app.models.user import Usuarios
+from app.models.users_allow import UsuariosPermitidos
 import sys
 import os
 

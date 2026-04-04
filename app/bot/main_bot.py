@@ -11,12 +11,15 @@ from app.handlers.cuentas import account
 from app.handlers.resumen import resumen
 from app.handlers.data import data_router
 from app.handlers.dolar import dolar_bcv
+from app.middleware.user_auth import AuthUser
+from app.db.connection import SessionLocal
+from app.middleware.dbsession import DBSessionMiddleware
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-async def setup_bot():
+async def setup_bot(usuarios_permitidos):
     """Función Constructora, prepara al Bot y el Dispatcher"""
     token = os.getenv("TOKEN")
     if not token:
@@ -24,9 +27,11 @@ async def setup_bot():
         raise ValueError("Error el Token del Bot no se encuentra")
 
     bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-
     dp = Dispatcher()
+    auth_user = AuthUser()
+    await auth_user.cargar_usuarios_permitidos()
 
+    dp.message.outer_middleware(auth_user)
     dp.include_router(start_router)
     dp.include_router(help)
     dp.include_router(account)

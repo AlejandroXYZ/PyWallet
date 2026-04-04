@@ -1,7 +1,12 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from pydantic import main
+from sqlalchemy import select
 from app.bot.main_bot import setup_bot
+from app.db.connection import SessionLocal
+from app.models import users_allow
+from app.models.users_allow import UsuariosPermitidos
 import os
 import sys
 
@@ -18,9 +23,17 @@ webhook_url = os.getenv("WEBHOOK_URL", "https://dominio-publico.com")
 environment = os.getenv("ENVIRONMENT", "development")
 
 
+async def startup():
+    async with SessionLocal() as db:
+        query = await db.execute(select(UsuariosPermitidos.telegram_id))
+        ALLOW_USERS = set(query.scalars().all())
+        return ALLOW_USERS
+
+
 @asynccontextmanager
 async def lifespan():
-    bot, dp = await setup_bot()
+    usuarios_permitidos = await startup()
+    bot, dp = await setup_bot(usuarios_permitidos)
 
     if environment == "development":
         logger.info("Modo Desarrollo")

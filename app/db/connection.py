@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine, Asyn
 from app.models.account import Cuentas
 from app.models.transaction import Transaction
 from app.models.user import Usuarios
+from app.models.users_allow import UsuariosPermitidos
 import os
 
 
