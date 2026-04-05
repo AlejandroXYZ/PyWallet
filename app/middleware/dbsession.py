@@ -1,6 +1,11 @@
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import async_sessionmaker
+import traceback
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class DBSessionMiddleware(BaseMiddleware):
@@ -16,9 +21,10 @@ class DBSessionMiddleware(BaseMiddleware):
                 await session.commit()
                 return resultado
 
-            except Exception as e:
+            except Exception:
                 await session.rollback()
-                print(f"Error en el handler: {e}")
+                error = traceback.format_exc()
+                logger.error(error)
 
                 if isinstance(event, Message):
                     await event.answer("Hubo un error interno procesando tu solicitud.")

@@ -14,6 +14,7 @@ from app.handlers.dolar import dolar_bcv
 from app.middleware.user_auth import AuthUser
 from app.db.connection import SessionLocal
 from app.middleware.dbsession import DBSessionMiddleware
+from app.handlers.admin import admin_router
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,9 @@ async def setup_bot(usuarios_permitidos):
     await auth_user.cargar_usuarios_permitidos()
 
     dp.message.outer_middleware(auth_user)
+    dp.callback_query.middleware(auth_user)
     dp.include_router(start_router)
+    dp.include_router(admin_router)
     dp.include_router(help)
     dp.include_router(account)
     dp.include_router(resumen)
@@ -40,5 +43,5 @@ async def setup_bot(usuarios_permitidos):
     dp.include_router(IA_message)
     dp.include_router(data_router)
     dp.include_router(dolar_bcv)
-    await setup_commands(bot=bot)
+    await setup_commands(bot=bot, usuarios=auth_user.ALLOW_USERS)
     return bot, dp

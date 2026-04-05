@@ -57,6 +57,8 @@ class AuthUser(BaseMiddleware):
             logger.info(
                 f"Usuario {message.from_user.id} se encuentra registrado con el nombre: {self.ALLOW_USERS[message.from_user.id]}"
             )
+            data["permitidos"] = self.ALLOW_USERS
+            data["registrados"] = self.REGISTERED_USERS
             return await handler(message, data)
         else:
             logger.info(f"Usuario {message.from_user.id} no se encuentra registrado")
