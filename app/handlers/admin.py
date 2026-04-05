@@ -2,6 +2,7 @@ import re
 from aiogram import Router, types, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import Command
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.middleware.dbsession import DBSessionMiddleware
 from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -43,8 +44,7 @@ async def verificar_id(message: Message, state: AdminUsersFSM, permitidos: dict)
     if not verificar:
         logger.info(f"El Admin escribió un Código no válido: {message.text}")
         await message.answer("Código no válido, Intenta de Nuevo")
-
-    elif message.text in permitidos:
+    elif int(message.text) in permitidos:
         logger.info("El Usuario ya está registrado")
         await message.answer("El Usuario ya está registrado como Usuario Permitido")
         await state.clear()
@@ -65,9 +65,8 @@ async def nuevo_usuario(
     db.add(usuario)
     await db.flush()
     await db.refresh(usuario)
-    await db.commit()
     logger.info("Usuario Añadido Correctamente")
-    permitidos[datos["telegram_id"]] = message.nombre
+    permitidos[datos["telegram_id"]] = message.text
     await message.answer(f"Usuario {message.text} Añadido Correctamente")
     await state.clear()
 
@@ -82,3 +81,42 @@ async def listar_usuarios(callback: CallbackQuery, permitidos: dict):
     await callback.message.answer(
         f"<b>Usuarios:</b>\n\n{texto}", parse_mode=ParseMode.HTML
     )
+
+
+@admin_router.callback_query(F.data == "borrar")
+async def borrar_usuario(callback: CallbackQuery, state: AdminUsersFSM):
+    logger.info("El Admin desea eliminar un Usuario de la lista de permitidos")
+    await callback.answer()
+    await callback.message.answer("Escribe el ID del Usuario que deseas eliminar")
+    await state.set_state(AdminUsersFSM.borrar)
+
+
+@admin_router.message(AdminUsersFSM.borrar)
+async def eliminando(
+    message: Message, db: AsyncSession, state: AdminUsersFSM, permitidos: dict
+):
+    patron = re.compile(r"\d+")
+    busqueda = bool(patron.fullmatch(message.text))
+    if not busqueda:
+        logger.info(f"El Admin escribió un ID no válido: {message.text}")
+        await message.answer("ID no Válido")
+        await state.clear()
+        return
+    elif int(message.text) not in permitidos:
+        logger.info("El Usuario no Existe en la lista de permitidos")
+        await message.answer("Usuario no encontrado")
+        await state.clear()
+        return
+    else:
+        logger.info("Eliminando Usuario")
+        query = await db.execute(
+            select(UsuariosPermitidos).filter(
+                UsuariosPermitidos.telegram_id == int(message.text)
+            )
+        )
+        usuario = query.scalar_one_or_none()
+        await db.delete(usuario)
+        await db.flush()
+        nombre = permitidos.pop(int(message.text), None)
+        logger.info(f"Usuario {nombre} eliminado")
+        await message.answer(f"Usuario {nombre} Eliminado Correctamente")
