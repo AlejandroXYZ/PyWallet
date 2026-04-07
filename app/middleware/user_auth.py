@@ -39,7 +39,10 @@ class AuthUser(BaseMiddleware):
     async def cargar_usuarios_permitidos(self):
         async with SessionLocal() as db:
             query = await db.execute(
-                select(UsuariosPermitidos.telegram_id, UsuariosPermitidos.nombre)
+                select(
+                    UsuariosPermitidos.telegram_id,
+                    UsuariosPermitidos.nombre,
+                )
             )
             self.ALLOW_USERS = dict(query.all())
             query = await db.execute(select(Usuarios.id_permitido))
@@ -47,7 +50,8 @@ class AuthUser(BaseMiddleware):
             self.REGISTERED_USERS.update(users)
 
     async def __call__(self, handler, message: Message, data):
-        logger.info(f"{self.ALLOW_USERS}\n\n{self.REGISTERED_USERS}\n\n")
+        data["registrados"] = self.REGISTERED_USERS
+        data["permitidos"] = self.ALLOW_USERS
         if message.from_user.id not in self.ALLOW_USERS:
             logger.info(f"El Usuario de id {message.from_user.id} no está autorizado")
             await message.answer("Acceso No Autorizado")
@@ -57,9 +61,15 @@ class AuthUser(BaseMiddleware):
             logger.info(
                 f"Usuario {message.from_user.id} se encuentra registrado con el nombre: {self.ALLOW_USERS[message.from_user.id]}"
             )
-            data["permitidos"] = self.ALLOW_USERS
-            data["registrados"] = self.REGISTERED_USERS
             return await handler(message, data)
         else:
-            logger.info(f"Usuario {message.from_user.id} no se encuentra registrado")
-            await message.answer("No estás Registrado")
+            if message.text == "/iniciar":
+                return await handler(message, data)
+            else:
+                logger.info(
+                    f"Usuario {message.from_user.id} no se encuentra registrado"
+                )
+                logger.info("Creando una Cuenta")
+                await message.answer(
+                    "Por favor escribe '/iniciar' para empezar a usar el bot'"
+                )

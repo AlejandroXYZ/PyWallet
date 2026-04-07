@@ -3,13 +3,14 @@ from app.models.account import Cuentas
 from app.models.transaction import Transaction
 from datetime import datetime, timedelta
 from sqlalchemy import select
+from app.models.user import Usuarios
 import logging
 
 logger = logging.getLogger(name=__name__)
 
 
-async def obtener_transacciones(data, db: AsyncSession):
-    query = select(Cuentas).filter(int(data["cuenta"]) == Cuentas.id)
+async def obtener_transacciones(data, db: AsyncSession, id: int):
+    query = select(Cuentas).where(int(data["cuenta"]) == Cuentas.id)
     resultado = await db.execute(query)
     cuenta_id = resultado.scalar_one_or_none()
 

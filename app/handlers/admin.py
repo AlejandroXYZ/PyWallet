@@ -23,14 +23,14 @@ logger = logging.getLogger(__name__)
 async def new_user(message: Message):
     builder = InlineKeyboardBuilder()
     builder.row(
-        types.InlineKeyboardButton(text="Añadir", callback_data="añadir"),
-        types.InlineKeyboardButton(text="Borrar", callback_data="borrar"),
-        types.InlineKeyboardButton(text="Listar", callback_data="listar"),
+        types.InlineKeyboardButton(text="Añadir", callback_data="añadir_usuario"),
+        types.InlineKeyboardButton(text="Borrar", callback_data="borrar_usuario"),
+        types.InlineKeyboardButton(text="Listar", callback_data="listar_usuario"),
     )
     await message.answer(text="Selecciona:", reply_markup=builder.as_markup())
 
 
-@admin_router.callback_query(F.data == "añadir")
+@admin_router.callback_query(F.data == "añadir_usuario")
 async def id_usuario(callback: CallbackQuery, state: AdminUsersFSM):
     await state.set_state(AdminUsersFSM.telegram_id)
     await callback.answer()
@@ -71,7 +71,7 @@ async def nuevo_usuario(
     await state.clear()
 
 
-@admin_router.callback_query(F.data == "listar")
+@admin_router.callback_query(F.data == "listar_usuario")
 async def listar_usuarios(callback: CallbackQuery, permitidos: dict):
     await callback.answer()
     texto = ""
@@ -83,7 +83,7 @@ async def listar_usuarios(callback: CallbackQuery, permitidos: dict):
     )
 
 
-@admin_router.callback_query(F.data == "borrar")
+@admin_router.callback_query(F.data == "borrar_usuario")
 async def borrar_usuario(callback: CallbackQuery, state: AdminUsersFSM):
     logger.info("El Admin desea eliminar un Usuario de la lista de permitidos")
     await callback.answer()

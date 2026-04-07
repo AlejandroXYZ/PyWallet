@@ -5,14 +5,23 @@ from app.models.transaction import Transaction
 from decimal import Decimal
 import logging
 from app.handlers.utils.cuentas import obtener_cuentas
+from app.models.user import Usuarios
 
 logger = logging.getLogger(name=__name__)
 
 
-async def create(message: dict, db: AsyncSession):
+async def create(message: dict, db: AsyncSession, id: int):
     logger.info("Verificando existencia de la cuenta")
 
-    query = select(Cuentas).filter(message["cuenta"] == Cuentas.nombre, Cuentas.activa)
+    query = (
+        select(Cuentas)
+        .join(Usuarios)
+        .filter(
+            message["cuenta"] == Cuentas.nombre,
+            Usuarios.id_permitido == id,
+            Cuentas.activa,
+        )
+    )
     busqueda_cuenta = await db.execute(query)
     logger.info(busqueda_cuenta)
     cuenta_id = busqueda_cuenta.scalar_one_or_none()
@@ -90,11 +99,11 @@ async def delete(message: dict, db: AsyncSession) -> dict:
         }
 
 
-async def new_account(message: dict, db: AsyncSession) -> dict:
+async def new_account(message: dict, registrados: dict, db: AsyncSession) -> dict:
     try:
         """Función para crear cuentas nuevas a través del comando /accounts"""
-        cuentas = await obtener_cuentas(db)
-        logger.info(cuentas)
+        logger.info("Creando Cuenta")
+        cuentas = await obtener_cuentas(db, message["telegram_id"])
         if cuentas:
             for i in cuentas:
                 if message["nombre"] == i.nombre:
@@ -103,7 +112,21 @@ async def new_account(message: dict, db: AsyncSession) -> dict:
                         "mensaje": f"Ya Tienes una cuenta con el nombre: {message['nombre']}",
                     }
 
-        new = Cuentas(nombre=message["nombre"], moneda=message["moneda"], propietario=1)
+        usuario_id = next(
+            (i for i in registrados if i == message["telegram_id"]),
+            None,
+        )
+        if not usuario_id:
+            return {"status": False, "mensaje": "No se encontró el ID del usuario"}
+        query_usuario = await db.execute(
+            select(Usuarios.id).where(Usuarios.id_permitido == usuario_id)
+        )
+        id = query_usuario.scalar()
+        new = Cuentas(
+            nombre=message["nombre"],
+            moneda=message["moneda"],
+            propietario=int(id),
+        )
         db.add(new)
         await db.flush()
         await db.refresh(new)
@@ -113,12 +136,16 @@ async def new_account(message: dict, db: AsyncSession) -> dict:
         }
     except Exception as e:
         logger.error(f"Ha ocurrido un error:\n\n{e}\n\n")
-        return {"status": False, "mensaje": ""}
+        await db.rollback()
+        return {
+            "status": False,
+            "mensaje": "Lo sentimos ha ocurrido un error interno, ya el admin fue notificado",
+        }
 
 
 async def delete_account(id: int, db: AsyncSession) -> dict:
 
-    query = select(Cuentas).filter(Cuentas.id == id)
+    query = select(Cuentas).join(Usuarios).filter(Cuentas.id == id)
     resultado = await db.execute(query)
     cuenta_existente = resultado.scalar_one_or_none()
 

@@ -15,4 +15,5 @@ async def mostrar_ayuda(message: Message):
     <b>PyWallet</b> es una billetera digital impulsada con IA que permite registrar transacciones facilmente
     """
 
+    hola = 1 / 0
     await message.answer(mensaje, parse_mode=ParseMode.HTML)

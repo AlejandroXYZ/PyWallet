@@ -42,7 +42,7 @@ async def exportar(callback: types.CallbackQuery):
 @data_router.callback_query(F.data == "csv")
 async def csv(callback: CallbackQuery, db: async_sessionmaker):
     await callback.answer("Generando CSV")
-    archivo = await generar_csv(db)
+    archivo = await generar_csv(db, callback.from_user.id)
     bufer = BufferedInputFile(file=archivo, filename="Historial.csv")
     await callback.message.delete()
     await callback.message.answer_document(document=bufer, caption="Historial CSV")

@@ -4,9 +4,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.transaction import Transaction
 from app.models.account import Cuentas
+from app.models.user import Usuarios
 
 
-async def generar_csv(db: AsyncSession):
+async def generar_csv(db: AsyncSession, telegram_id: int):
 
     objeto_ram = io.StringIO()
     escritor = csv.writer(objeto_ram)
@@ -35,8 +36,9 @@ async def generar_csv(db: AsyncSession):
             Cuentas.nombre.label("Nombre_cuenta"),
             Cuentas.moneda.label("Moneda"),
         )
-        .join(Transaction.cuenta_name)
-        .where(Transaction.activa)
+        .join(Cuentas, Transaction.cuenta == Cuentas.id)
+        .join(Usuarios, Cuentas.propietario == Usuarios.id)
+        .where(Transaction.activa, Usuarios.id_permitido == telegram_id)
         .order_by(Transaction.fecha.desc())
     )
 

@@ -1,6 +1,6 @@
 from aiogram import F, Router, types
 from aiogram.filters import Command
-from aiogram.types import CallbackQuery, InlineKeyboardButton, Message, message
+from aiogram.types import CallbackQuery, Message
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.utils.cuentas import obtener_cuentas, obtener_cuenta_especifica
@@ -37,9 +37,9 @@ async def menu_cuentas(message: Message):
 
 @account.callback_query(F.data == "mis_cuentas")
 async def ver_cuentas(callback: CallbackQuery, state: CuentaFSM, db: AsyncSession):
-    logger.info("El usuario seleccionó Consultar sus cuentas")
+    logger.info(f"El usuario {callback.from_user.id} seleccionó Consultar sus cuentas")
     await callback.answer()
-    mis_cuentas = await obtener_cuentas(db)
+    mis_cuentas = await obtener_cuentas(db, callback.from_user.id)
     builder = InlineKeyboardBuilder()
     if mis_cuentas:
         for i in mis_cuentas:
@@ -81,12 +81,10 @@ async def consultando_cuenta(
 
 
 @account.callback_query(F.data == "borrar")
-async def borrar_cuenta(
-    callback: CallbackQuery, state: CuentaFSM, db: async_sessionmaker
-):
+async def borrar_cuenta(callback: CallbackQuery, state: CuentaFSM, db: AsyncSession):
     await callback.answer()
     logger.info("El usuario elijió borrar una cuenta")
-    mis_cuentas = await obtener_cuentas(db)
+    mis_cuentas = await obtener_cuentas(db, callback.from_user.id)
     builder = InlineKeyboardBuilder()
     if mis_cuentas:
         for i in mis_cuentas:
@@ -97,6 +95,9 @@ async def borrar_cuenta(
             reply_markup=builder.as_markup(),
         )
         await state.set_state(CuentaFSM.borrar)
+    else:
+        logger.info("El usuario no tiene cuentas que borrar")
+        await callback.message.answer("No hay Cuentas, Crea una primero")
 
 
 @account.callback_query(CuentaFSM.borrar)
@@ -122,7 +123,7 @@ async def borrando(callback: CallbackQuery, state: CuentaFSM, db: async_sessionm
 
 @account.callback_query(F.data == "nueva")
 async def nueva_cuenta(callback: CallbackQuery, state: CuentaFSM):
-    logger.info("El usuario seleccionó Crear Cuenta")
+    logger.info(f"El usuario {callback.from_user.id}seleccionó Crear Cuenta")
     await callback.message.edit_text(
         "Escribe el Nombre de la cuenta de forma abreviada con 3 o 4 letras, por ejemplo: BNC,BDV,ZIN,PAY,BIN..."
     )
@@ -146,14 +147,17 @@ async def establecer_moneda(message: Message, state: CuentaFSM):
 
 
 @account.message(CuentaFSM.moneda)
-async def crear_cuenta(message: Message, state: CuentaFSM, db: AsyncSession):
+async def crear_cuenta(
+    message: Message, state: CuentaFSM, db: AsyncSession, registrados: dict
+):
     logger.info(f"El usuario escribió: {message.text}")
     moneda = message.text
     if len(moneda) <= 4 and len(moneda) >= 3:
         moneda_data = moneda.strip().upper()
         await state.update_data(moneda=moneda_data)
-        data = await state.get_data()
-        cuenta = await new_account(data, db=db)
+        datos = await state.get_data()
+        datos["telegram_id"] = message.from_user.id
+        cuenta = await new_account(message=datos, registrados=registrados, db=db)
         if cuenta["status"]:
             logger.info("Creando Cuenta")
             await message.answer(cuenta["mensaje"])

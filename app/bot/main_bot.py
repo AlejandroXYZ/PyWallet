@@ -1,3 +1,4 @@
+from aiogram.filters import ExceptionTypeFilter
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -15,6 +16,7 @@ from app.middleware.user_auth import AuthUser
 from app.db.connection import SessionLocal
 from app.middleware.dbsession import DBSessionMiddleware
 from app.handlers.admin import admin_router
+from app.bot.errors_catcher import error_catcher
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,6 +34,7 @@ async def setup_bot(usuarios_permitidos):
     auth_user = AuthUser()
     await auth_user.cargar_usuarios_permitidos()
 
+    dp.errors.register(error_catcher, ExceptionTypeFilter(Exception))
     dp.message.outer_middleware(auth_user)
     dp.callback_query.middleware(auth_user)
     dp.include_router(start_router)

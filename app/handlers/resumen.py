@@ -17,8 +17,8 @@ resumen.message.middleware(DBSessionMiddleware(SessionLocal))
 @resumen.message(Command("resumen"))
 async def obtener_resumen(message: Message, db: AsyncSession):
     dolar = await dolar_hoy()
-    cuentas = await obtener_cuentas(db)
-    total = await obtener_total(db)
+    cuentas = await obtener_cuentas(db, message.from_user.id)
+    total = await obtener_total(db, message.from_user.id)
     if not total:
         total = "Error, no se pudo obtener los totales"
     texto_cuentas = ""

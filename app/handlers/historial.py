@@ -22,10 +22,10 @@ historial.callback_query.middleware(DBSessionMiddleware(SessionLocal))
 logger = logging.getLogger(name=__name__)
 
 
-async def get_keyboard_historial(db: AsyncSession):
+async def get_keyboard_historial(db: AsyncSession, id: int):
     logging.info("Mostrando Cuentas al Usuario")
     builder = InlineKeyboardBuilder()
-    cuentas = await obtener_cuentas(db)
+    cuentas = await obtener_cuentas(db, id)
     botones = []
     if not cuentas:
         logger.info("No Hay Cuentas Creadas")
@@ -45,7 +45,7 @@ async def get_keyboard_historial(db: AsyncSession):
 async def cmd_historial(mensaje: Message, state: FSMContext, db: AsyncSession):
     try:
         logger.info("Capturando mensaje")
-        keyboard = await get_keyboard_historial(db)
+        keyboard = await get_keyboard_historial(db, mensaje.from_user.id)
         if not keyboard:
             await mensaje.answer("No hay Cuentas Creadas, Crea una Primero")
         else:
@@ -125,7 +125,7 @@ async def finalizar_historial(
     await state.update_data(fecha=fecha)
     data = await state.get_data()
     logger.info(f"El usuario eligió fecha: {fecha}\n\n\n{data}\n\n\n")
-    respuesta = await obtener_transacciones(data, db)
+    respuesta = await obtener_transacciones(data, db, callback.message.from_user.id)
     if respuesta["status"]:
         logger.info(f"Resultados:\n\n{respuesta['registros']}")
         await callback.message.answer(respuesta["registros"], parse_mode=ParseMode.HTML)
