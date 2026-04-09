@@ -6,3 +6,7 @@ groq
 python-dateutil
 requests
 asyncpg
+matplotlib
+pandas
+numpy
+seaborn

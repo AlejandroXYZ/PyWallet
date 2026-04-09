@@ -137,7 +137,7 @@ async def establecer_moneda(message: Message, state: CuentaFSM):
     if len(nombre) <= 4 and len(nombre) >= 3:
         data = nombre.strip().upper()
         await state.update_data(nombre=data)
-        await message.answer("Escribe El tipo de Moneda a usar\n\nVES\nUSD\nUSDT")
+        await message.answer("Escribe El tipo de Moneda a usar\n\nVES\nUSD")
         await state.set_state(CuentaFSM.moneda)
     else:
         logger.info("El usuario escribió un nombre de cuenta no válido")
@@ -152,23 +152,30 @@ async def crear_cuenta(
 ):
     logger.info(f"El usuario escribió: {message.text}")
     moneda = message.text
-    if len(moneda) <= 4 and len(moneda) >= 3:
-        moneda_data = moneda.strip().upper()
-        await state.update_data(moneda=moneda_data)
-        datos = await state.get_data()
-        datos["telegram_id"] = message.from_user.id
-        cuenta = await new_account(message=datos, registrados=registrados, db=db)
-        if cuenta["status"]:
-            logger.info("Creando Cuenta")
-            await message.answer(cuenta["mensaje"])
-            logger.info("Cuenta Creada Correctamente")
-            await state.clear()
-            return
+    monedas_permitidas = ["VES", "USD"]
+    moneda_data = moneda.strip().upper()
+    if len(moneda) <= 4 and len(moneda) >= 3 and moneda_data:
+        if moneda_data in monedas_permitidas:
+            await state.update_data(moneda=moneda_data)
+            datos = await state.get_data()
+            datos["telegram_id"] = message.from_user.id
+            cuenta = await new_account(message=datos, registrados=registrados, db=db)
+            if cuenta["status"]:
+                logger.info("Creando Cuenta")
+                await message.answer(cuenta["mensaje"])
+                logger.info("Cuenta Creada Correctamente")
+                await state.clear()
+                return
+            else:
+                logger.error(cuenta["mensaje"])
+                await message.answer(cuenta["mensaje"])
+                await state.clear()
+                return
         else:
-            logger.error(cuenta["mensaje"])
-            await message.answer(cuenta["mensaje"])
-            await state.clear()
-            return
+            logger.info(
+                "El Usuarió {message.from_user.id} escribió {message.text} y no se pudo crear la cuenta porque no es una moneda permitida"
+            )
+            await message.answer("Por favor asegurate de escribir una moneda válida")
     else:
         logger.info("El usuario escribió un nombre de Moneda no válido")
         await message.answer(

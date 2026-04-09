@@ -2,6 +2,8 @@ import httpx
 import os
 import logging
 from decimal import Decimal
+import pandas as pd
+
 
 url = os.getenv("API_DOLAR")
 logger = logging.getLogger(__name__)
@@ -57,3 +59,19 @@ async def convertidor(moneda: str, saldo) -> dict:
             "status": False,
             "mensaje": "Ha Ocurrido un error durante la conversion",
         }
+
+
+async def convertidor_df(datos: dict):
+    try:
+        logger.info("Convirtiendo VES a USD en el DataFrame")
+        df = pd.DataFrame(datos)
+        bcv = await dolar_hoy()
+        dolar = Decimal(bcv["precio"])
+        df.loc[df["Moneda"] == "VES", "Saldo"] = df["Saldo"] / dolar
+        logger.info("Convertido Correctamente")
+        return df
+    except Exception as e:
+        logger.error(
+            "Ha Ocurrido un Error mientras se convertian los bolívares a dolares en el DataFrame"
+        )
+        raise e
