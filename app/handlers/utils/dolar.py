@@ -61,15 +61,20 @@ async def convertidor(moneda: str, saldo) -> dict:
         }
 
 
-async def convertidor_df(datos: dict):
+async def convertidor_df(datos: dict, tipo: str):
     try:
         logger.info("Convirtiendo VES a USD en el DataFrame")
         df = pd.DataFrame(datos)
         bcv = await dolar_hoy()
         dolar = Decimal(bcv["precio"])
-        df.loc[df["Moneda"] == "VES", "Saldo"] = df["Saldo"] / dolar
-        logger.info("Convertido Correctamente")
-        return df
+        if tipo == "cuenta":
+            df.loc[df["Moneda"] == "VES", "Saldo"] = df["Saldo"] / dolar
+            logger.info("Convertido Correctamente")
+            return df
+        elif tipo == "transaccion":
+            df.loc[df["moneda"] == "VES", "monto"] = df["monto"] / dolar
+            logger.info("Convertido Correctamente")
+            return df
     except Exception as e:
         logger.error(
             "Ha Ocurrido un Error mientras se convertian los bolívares a dolares en el DataFrame"

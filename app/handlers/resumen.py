@@ -8,7 +8,7 @@ from app.handlers.utils.cuentas import obtener_cuentas, obtener_total
 from aiogram.enums import ParseMode
 from app.middleware.dbsession import DBSessionMiddleware
 from app.db.connection import SessionLocal
-from app.handlers.utils.graficas import extraer_datos, saldos_actuales
+from app.handlers.utils.graficas import extraer_datos_resumen, saldos_actuales
 import asyncio
 
 resumen = Router(name="resumen")
@@ -38,7 +38,7 @@ async def obtener_resumen(message: Message, db: AsyncSession):
     respuesta = f"<b>Resumen Financiero</b>\n\nPrecio Dolar Hoy: {dolar['precio']}\n\n<b>Cuentas</b>\n{texto_cuentas}\n\n<b>Dinero Total por Moneda</b>\n{total['por_moneda']}\n\n"
     await message.answer(respuesta, parse_mode=ParseMode.HTML)
 
-    datos = await extraer_datos(db, message.from_user.id)
+    datos = await extraer_datos_resumen(db, message.from_user.id)
     if datos.empty:
         return
     grafica = await asyncio.to_thread(saldos_actuales, datos)
