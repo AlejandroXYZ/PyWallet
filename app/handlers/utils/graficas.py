@@ -29,7 +29,7 @@ async def extraer_datos_resumen(db: AsyncSession, id: int):
         )
         cuentas = query.all()
         if not cuentas:
-            return False
+            return pd.DataFrame({})
         nombres, saldos, moneda = zip(*cuentas) if cuentas else ([], [], [])
         datos = {"Cuenta": nombres, "Saldo": saldos, "Moneda": moneda}
         if "VES" in datos["Moneda"]:

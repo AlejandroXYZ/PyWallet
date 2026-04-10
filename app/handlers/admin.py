@@ -1,5 +1,5 @@
 import re
-from aiogram import Router, types, F
+from aiogram import Router, types, F, Bot
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import Command
 from sqlalchemy import select
@@ -57,7 +57,7 @@ async def verificar_id(message: Message, state: AdminUsersFSM, permitidos: dict)
 
 @admin_router.message(AdminUsersFSM.nombre_usuario)
 async def nuevo_usuario(
-    message: Message, state: AdminUsersFSM, db: AsyncSession, permitidos: dict
+    message: Message, state: AdminUsersFSM, db: AsyncSession, permitidos: dict, bot: Bot
 ):
     logger.info("Nombre del Nuevo Usuario: {message.text}")
     datos = await state.get_data()
@@ -69,6 +69,16 @@ async def nuevo_usuario(
     permitidos[datos["telegram_id"]] = message.text
     await message.answer(f"Usuario {message.text} Añadido Correctamente")
     await state.clear()
+    try:
+        await bot.send_message(
+            chat_id=datos["telegram_id"],
+            text=f"¡Tu solicitud ha sido aprobada por el administrador!\n\nHas sido registrado como: <b>{message.text}</b>.\nYa puedes empezar a usar Pywallet. Escribe /help para ver los comandos.",
+            parse_mode="HTML",
+        )
+    except Exception as e:
+        logger.error(
+            f"No se le pudo enviar el mensaje de bienvenida al usuario {message.from_user.full_name}: {e}"
+        )
 
 
 @admin_router.callback_query(F.data == "listar_usuario")

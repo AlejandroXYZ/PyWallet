@@ -32,6 +32,8 @@ async def setup_bot(usuarios_permitidos):
     bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
     auth_user = AuthUser()
+
+    await auth_user.crear_usuario_admin()
     await auth_user.cargar_usuarios_permitidos()
 
     dp.errors.register(error_catcher, ExceptionTypeFilter(Exception))
