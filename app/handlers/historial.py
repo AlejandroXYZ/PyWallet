@@ -16,9 +16,6 @@ from app.db.connection import SessionLocal
 
 
 historial = Router(name="historial")
-historial.message.middleware(DBSessionMiddleware(SessionLocal))
-historial.callback_query.middleware(DBSessionMiddleware(SessionLocal))
-
 logger = logging.getLogger(name=__name__)
 
 

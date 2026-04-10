@@ -10,7 +10,6 @@ from app.middleware.dbsession import DBSessionMiddleware
 from app.db.connection import SessionLocal
 
 IA_message = Router(name="IA_message")
-IA_message.message.middleware(DBSessionMiddleware(SessionLocal))
 
 logger = logging.getLogger(name=__name__)
 
@@ -24,12 +23,12 @@ async def analizar_mensaje(mensaje: Message, db: AsyncSession):
     match json_dict["accion"]:
         case "CREATE":
             transaccion = await CRUD.create(json_dict, db, mensaje.from_user.id)
-            if transaccion:
-                answer = f"Transaccion Completada id:{transaccion[0]}\n\n{json_dict['comentario']}\n\nSaldo en tu cuenta {transaccion[2]}: {transaccion[1]}"
+            if transaccion["status"]:
+                answer = f"Transaccion Completada id:{transaccion['id']}\n\n{json_dict['comentario']}\n\nSaldo en tu cuenta {transaccion['nombre']}: {transaccion['saldo']}"
                 logger.info(answer)
                 await mensaje.answer(answer)
             else:
-                answer = "La cuenta no es válida, verifique sus cuentas"
+                answer = transaccion["mensaje"]
                 logger.error(answer)
                 await mensaje.answer(answer)
 

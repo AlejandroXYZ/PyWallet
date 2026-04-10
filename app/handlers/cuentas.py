@@ -13,8 +13,6 @@ from app.middleware.dbsession import DBSessionMiddleware
 from app.db.connection import SessionLocal
 
 account = Router(name="accounts")
-account.message.middleware(DBSessionMiddleware(SessionLocal))
-account.callback_query.middleware(DBSessionMiddleware(SessionLocal))
 
 logger = logging.getLogger(name=__name__)
 
@@ -60,7 +58,7 @@ async def consultando_cuenta(
     callback: CallbackQuery, state: CuentaFSM, db: AsyncSession
 ):
     await callback.answer()
-    id = int(callback.data)
+    id = callback.data
     cuenta = await obtener_cuenta_especifica(id, db)
     await callback.message.delete()
     if cuenta["status"]:

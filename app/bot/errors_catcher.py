@@ -11,21 +11,37 @@ async def error_catcher(event: ErrorEvent):
     admin = os.getenv("ADMIN_ID", None)
     error = event.exception
     detalle = traceback.format_exc()
-    informe = f"<b>Error:</b>\n\n<code>{type(error).__name__}</code>\nMotivo:<code>{html.escape(str(error))}</code>\nUsuario:{event.update.message.from_user.id}\n\nTraceback:\n{html.escape(detalle[-3500:])}"
+
+    user_id = "Desconocido"
+
+    if event.update.message:
+        user_id = event.update.message.from_user.id
+    elif event.update.callback_query:
+        user_id = event.update.callback_query.from_user.id
+    # -------------------------------------
+
+    informe = f"<b>Error:</b>\n\n<code>{type(error).__name__}</code>\nMotivo:<code>{html.escape(str(error))}</code>\nUsuario:{user_id}\n\nTraceback:\n{html.escape(detalle[-3500:])}"
 
     try:
-        await event.update.bot.send_message(
-            chat_id=admin, text=informe, parse_mode="HTML"
-        )
+        bot = event.update.bot
+        await bot.send_message(chat_id=admin, text=informe, parse_mode="HTML")
+
         if event.update.message:
             try:
-                logger.error(
-                    f"El usuario {event.update.message.from_user.id} le ha ocurrido un error: {Exception}"
-                )
+                logger.error(f"Error para usuario {user_id}: {type(error).__name__}")
                 await event.update.message.answer(
                     "Ha ocurrido un error interno, el creador ha sido notificado"
                 )
             except Exception:
                 pass
-    except Exception:
-        logger.error("Error Grave, el Catcher no pudo enviar el mensaje al admin")
+
+        elif event.update.callback_query:
+            try:
+                await event.update.callback_query.answer(
+                    "Error interno al procesar la solicitud.", show_alert=True
+                )
+            except Exception:
+                pass
+
+    except Exception as e:
+        logger.error(f"Catcher falló: {e}")

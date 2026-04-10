@@ -16,8 +16,6 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 data_router = Router(name="data")
-data_router.message.middleware(DBSessionMiddleware(SessionLocal))
-data_router.callback_query.middleware(DBSessionMiddleware(SessionLocal))
 
 
 @data_router.message(Command("datos"))

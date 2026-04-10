@@ -14,7 +14,7 @@ import logging
 
 
 admin_router = Router(name="admin_router")
-admin_router.message.middleware(DBSessionMiddleware(SessionLocal))
+
 
 logger = logging.getLogger(__name__)
 

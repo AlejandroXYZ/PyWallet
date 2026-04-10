@@ -15,12 +15,11 @@ from app.handlers.FSM.start import Inicio
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.storage.base import StorageKey
 from app.handlers.FSM.admin_users import AdminUsersFSM
+from app.models.users_allow import UsuariosPermitidos
 import os
 
 start_router = Router(name="start")
 logger = logging.getLogger(name=__name__)
-start_router.message.middleware(DBSessionMiddleware(SessionLocal))
-
 admin_id = os.getenv("ADMIN_ID")
 
 
@@ -44,7 +43,10 @@ async def ignorar_botones_rechazados(callback: CallbackQuery):
 
 @start_router.message(CommandStart())
 async def cmd_start(
-    message: Message, state: FSMContext, permitidos: set, registrados: dict
+    message: Message,
+    state: FSMContext,
+    permitidos: set,
+    registrados: dict,
 ):
     logger.info("Iniciando Bot..")
     if message.from_user.id in registrados:
@@ -62,11 +64,15 @@ async def cmd_start(
     builder.row(
         InlineKeyboardButton(
             text="SI",
-            callback_data=AuthCallback(action="si", user_id=message.from_user.id),
+            callback_data=AuthCallback(
+                action="si", user_id=f"{message.from_user.id}"
+            ).pack(),
         ),
         InlineKeyboardButton(
             text="NO",
-            callback_data=AuthCallback(action="no", user_id=message.from_user.id),
+            callback_data=AuthCallback(
+                action="no", user_id=f"{message.from_user.id}"
+            ).pack(),
         ),
     )
     await message.answer(
@@ -84,17 +90,16 @@ async def cmd_start(
 @start_router.callback_query(AuthCallback.filter())
 async def handle_admin_auth(
     callback: CallbackQuery,
-    registrados: set,
-    permitidos: dict,
+    registrados: dict,
+    permitidos: set,
     callback_data: AuthCallback,
     bot: Bot,
-    dp: Dispatcher,
     db: AsyncSession,
     state: FSMContext,
+    dp: Dispatcher,
 ):
     action = callback_data.action
-    user_id = callback_data.user_id
-
+    user_id = int(callback_data.user_id)
     await callback.message.edit_text(
         text=f"Solicitud del usuario {user_id} resuelta: {'APROBADA' if action == 'si' else 'RECHAZADA'}."
     )
@@ -107,10 +112,9 @@ async def handle_admin_auth(
         await estado_usuario.clear()
         await bot.send_message(
             chat_id=user_id,
-            text="🎉 ¡Tu solicitud ha sido aprobada por el administrador! Ya puedes usar Pywallet.",
+            text=" ¡Tu solicitud ha sido aprobada por el administrador! Ya puedes usar Pywallet.",
         )
         await state.update_data(telegram_id=user_id)
-        await state.set_state(AdminUsersFSM.telegram_id)
         info_usuario = await bot.get_chat(user_id)
         nombre = info_usuario.full_name or f"Usuario_{user_id}"
         await registro_nuevo_usuario(user_id, nombre, db, registrados, permitidos)
@@ -119,7 +123,7 @@ async def handle_admin_auth(
         await estado_usuario.set_state(Inicio.rechazada)
         await bot.send_message(
             chat_id=user_id,
-            text="❌ Lo siento, tu solicitud de acceso ha sido denegada por el administrador.",
+            text="Lo siento, tu solicitud de acceso ha sido denegada por el administrador.",
         )
     await callback.answer()
 
@@ -133,6 +137,12 @@ async def registro_nuevo_usuario(
 ):
     try:
         logger.info("Creando Cuenta para el nuevo usuario")
+
+        nuevo_permitido = UsuariosPermitidos(nombre=full_name, telegram_id=user_id)
+        db.add(nuevo_permitido)
+        await db.flush()
+        permitidos[user_id] = full_name
+        logger.info(f"Usuario: {full_name} Añadido a la lista de Usuarios Permitidos")
         if user_id in registrados:
             logger.info(
                 f"Usuario ya está registrado con el nombre: {permitidos[user_id]}"

@@ -13,7 +13,6 @@ import asyncio
 
 resumen = Router(name="resumen")
 logger = logging.getLogger(name=__name__)
-resumen.message.middleware(DBSessionMiddleware(SessionLocal))
 
 
 @resumen.message(Command("resumen"))

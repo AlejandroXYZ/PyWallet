@@ -17,6 +17,8 @@
 
 ## Sobre el Proyecto
 
+![Imagen 1](./screenshots/1.jpg)
+
 **PyWallet** nació de la necesidad de registrar gastos diarios sin lidiar con interfaces complejas. El usuario simplemente envía un mensaje como: *"Gasté 20$ en el supermercado usando la cuenta BNC"*, y el bot, impulsado por la API de Groq (LLaMA), extrae los datos, estructura un JSON y registra la transacción en la base de datos de forma asíncrona.
 
 Este proyecto fue desarrollado con un enfoque en Arquitectura Limpia, concurrencia y buenas prácticas de ingeniería de software.
@@ -96,9 +98,10 @@ Levantar los contenedores:
 
 ## Demostración de Uso
 
-Ingreso de datos con IA:
+Ingreso de datos con IA y Visualización de finanzas
 
-Visualización de Finanzas:
+![Imagen 2](./screenshots/2.jpg)
+![Imagen 3](./screenshots/3.jpg)
 
 ## Autor y Contacto
 

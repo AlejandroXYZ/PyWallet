@@ -27,8 +27,16 @@ async def create(message: dict, db: AsyncSession, id: int):
     cuenta_id = busqueda_cuenta.scalar_one_or_none()
 
     if not cuenta_id:
-        return False
+        return {
+            "status": False,
+            mensaje: "Error no se encontró la cuenta, verifica que esa cuenta existe o crea una",
+        }
 
+    if int(message["monto"]) > cuenta_id.saldo:
+        return {
+            "status": False,
+            "mensaje": f"No te alcanza el dinero, el saldo de tu cuenta es: {cuenta_id.saldo}",
+        }
     logger.info("Cuenta Verificada Correctamente")
     logger.info("Creando transaccion")
     transaccion = Transaction(
@@ -55,7 +63,12 @@ async def create(message: dict, db: AsyncSession, id: int):
     await db.flush()
     await db.refresh(transaccion)
     await db.refresh(cuenta_id)
-    return [transaccion.id, cuenta_id.saldo, cuenta_id.nombre]
+    return {
+        "id": transaccion.id,
+        "saldo": cuenta_id.saldo,
+        "nombre": cuenta_id.nombre,
+        "status": True,
+    }
 
 
 async def delete(message: dict, db: AsyncSession) -> dict:

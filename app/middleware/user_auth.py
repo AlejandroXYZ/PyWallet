@@ -1,10 +1,9 @@
 import logging
 from aiogram import BaseMiddleware
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from app.db.connection import SessionLocal
-from app.models import user
 from app.models.users_allow import UsuariosPermitidos
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import Usuarios
@@ -98,27 +97,42 @@ class AuthUser(BaseMiddleware):
                 await db.rollback()
                 raise e
 
-    async def __call__(self, handler, message: Message, data):
+    async def __call__(self, handler, event, data):
         data["registrados"] = self.REGISTERED_USERS
         data["permitidos"] = self.ALLOW_USERS
-        if message.from_user.id not in self.ALLOW_USERS:
-            logger.info(f"El Usuario de id {message.from_user.id} no está autorizado")
-            await message.answer("Acceso No Autorizado")
+
+        user = event.from_user
+        if not user:
+            return await handler(event, data)
+
+        if isinstance(event, Message) and event.text:
+            if event.text == "/start":
+                if user.id not in self.ALLOW_USERS:
+                    logger.info(f"Usuario nuevo {user.id}:{user.full_name}")
+                    return await handler(event, data)
+                else:
+                    await event.answer("Ya has Iniciado el Bot, escribe '/help'...")
+                    return
+
+        if user.id not in self.ALLOW_USERS:
+            logger.info(f"El Usuario de id {user.id} no está autorizado")
+
+            if isinstance(event, Message):
+                await event.answer("Acceso No Autorizado")
+            elif isinstance(event, CallbackQuery):
+                await event.answer("No tienes permiso.", show_alert=True)
             return
 
-        if message.from_user.id in self.REGISTERED_USERS:
-            logger.info(
-                f"Usuario {message.from_user.id} se encuentra registrado con el nombre: {self.ALLOW_USERS[message.from_user.id]}"
-            )
-            return await handler(message, data)
+        if user.id in self.REGISTERED_USERS:
+            logger.info(f"Usuario {user.id} ya registrado.")
+            return await handler(event, data)
         else:
-            if message.text == "/iniciar":
-                return await handler(message, data)
-            else:
-                logger.info(
-                    f"Usuario {message.from_user.id} no se encuentra registrado"
-                )
-                logger.info("Creando una Cuenta")
-                await message.answer(
-                    "Por favor escribe '/iniciar' para empezar a usar el bot'"
-                )
+            if isinstance(event, Message):
+                if event.text == "/iniciar":
+                    return await handler(event, data)
+
+                logger.info(f"Usuario {user.id} no registrado. Pidiendo /iniciar")
+                await event.answer("Por favor escribe '/iniciar' para empezar.")
+                return
+
+            return await handler(event, data)

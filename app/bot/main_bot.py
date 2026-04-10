@@ -32,10 +32,10 @@ async def setup_bot(usuarios_permitidos):
     bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
     auth_user = AuthUser()
-
+    dp["dp"] = dp
+    dp.update.middleware(DBSessionMiddleware(SessionLocal))
     await auth_user.crear_usuario_admin()
     await auth_user.cargar_usuarios_permitidos()
-
     dp.errors.register(error_catcher, ExceptionTypeFilter(Exception))
     dp.message.outer_middleware(auth_user)
     dp.callback_query.middleware(auth_user)
