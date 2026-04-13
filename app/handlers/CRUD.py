@@ -29,10 +29,10 @@ async def create(message: dict, db: AsyncSession, id: int):
     if not cuenta_id:
         return {
             "status": False,
-            mensaje: "Error no se encontró la cuenta, verifica que esa cuenta existe o crea una",
+            "mensaje": "Error no se encontró la cuenta, verifica que esa cuenta existe o crea una",
         }
 
-    if int(message["monto"]) > cuenta_id.saldo:
+    if int(message["monto"]) > cuenta_id.saldo and message["tipo"] == "gasto":
         return {
             "status": False,
             "mensaje": f"No te alcanza el dinero, el saldo de tu cuenta es: {cuenta_id.saldo}",
