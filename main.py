@@ -1,15 +1,14 @@
 import asyncio
 import logging
-from contextlib import asynccontextmanager
-from pydantic import main
+import sys
+import os
+from aiohttp import web
 from sqlalchemy import select
+
 from app.bot.main_bot import setup_bot
 from app.db.connection import SessionLocal
-from app.models import users_allow
 from app.models.users_allow import UsuariosPermitidos
-import os
-import sys
-
+from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,58 +18,78 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
-webhook_url = os.getenv("WEBHOOK_URL", "https://dominio-publico.com")
-environment = os.getenv("ENVIRONMENT", "development")
 
 
-async def startup():
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+SERVIDOR_URL = os.getenv("SERVIDOR_URL", "https://dominio-publico.com")
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"{SERVIDOR_URL}{WEBHOOK_PATH}"
+PORT = int(os.getenv("PORT", 10000))
+
+
+async def ping_handler(request):
+    """Mantiene el bot vivo en Render para UptimeRobot"""
+    return web.Response(text="EL bot está encendido y el servidor web responde.")
+
+
+async def get_allowed_users():
+    """Obtiene los usuarios permitidos de la DB"""
     async with SessionLocal() as db:
         query = await db.execute(select(UsuariosPermitidos.telegram_id))
-        ALLOW_USERS = set(query.scalars().all())
-        return ALLOW_USERS
+        return set(query.scalars().all())
 
 
-@asynccontextmanager
-async def lifespan():
-    usuarios_permitidos = await startup()
+async def main():
+    usuarios_permitidos = await get_allowed_users()
     bot, dp = await setup_bot(usuarios_permitidos)
 
-    if environment == "development":
-        logger.info("Modo Desarrollo")
+    if ENVIRONMENT == "development":
+        logger.info("Iniciando en Modo Desarrollo (Polling)...")
         await bot.delete_webhook(drop_pending_updates=True)
-        polling_task = asyncio.create_task(
-            dp.start_polling(bot, allowed_updates=["message", "callback_query"])
-        )
-        yield
-        polling_task.cancel()
+
+        await dp.start_polling(bot, allowed_updates=["message", "callback_query"])
 
     else:
-        logger.info("Modo Producción")
+        logger.info("🚀 Iniciando en Modo Producción (Webhook)...")
 
         await bot.set_webhook(
-            url=webhook_url,
-            drop_pending_updates=(True),
+            url=WEBHOOK_URL,
+            drop_pending_updates=True,
             allowed_updates=["message", "callback_query"],
         )
+        logger.info(f"WebHook configurado en: {WEBHOOK_URL}")
 
-        yield
+        app = web.Application()
+        app.router.add_get("/", ping_handler)
 
-        await bot.delete_webhook()
-        await bot.session.close()
+        webhook_requests_handler = SimpleRequestHandler(
+            dispatcher=dp,
+            bot=bot,
+        )
+        webhook_requests_handler.register(app, path=WEBHOOK_PATH)
 
+        setup_application(app, dp, bot=bot)
 
-async def run_bot():
-    async with lifespan():
-        logger.info("Bot en ejecución... Presiona Ctrl+C para detener.")
+        runner = web.AppRunner(app)
+        await runner.setup()
+        site = web.TCPSite(runner, "0.0.0.0", PORT)
+        await site.start()
+
+        logger.info(f"Servidor Webhook corriendo en el puerto {PORT}")
+
         try:
             while True:
                 await asyncio.sleep(3600)
         except asyncio.CancelledError:
             pass
+        finally:
+            logger.info("Apagando y limpiando recursos...")
+            await bot.delete_webhook()
+            await bot.session.close()
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(run_bot())
+        asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Bot detenido manualmente")
