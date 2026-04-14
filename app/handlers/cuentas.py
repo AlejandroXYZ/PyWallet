@@ -58,7 +58,7 @@ async def consultando_cuenta(
     callback: CallbackQuery, state: CuentaFSM, db: AsyncSession
 ):
     await callback.answer()
-    id = callback.data
+    id = int(callback.data)
     cuenta = await obtener_cuenta_especifica(id, db)
     await callback.message.delete()
     if cuenta["status"]:

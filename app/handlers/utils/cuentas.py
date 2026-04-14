@@ -28,7 +28,9 @@ async def obtener_cuentas(db: AsyncSession, id: int) -> list | bool:
 
 
 async def obtener_cuenta_especifica(id: int, db: AsyncSession) -> dict:
-    cuenta = await db.execute(select(Cuentas).filter(id == Cuentas.id, Cuentas.activa))
+    cuenta = await db.execute(
+        select(Cuentas).filter(id == Cuentas.id, Cuentas.activa == True)
+    )
     cuenta = cuenta.scalar_one_or_none()
 
     if not cuenta:
