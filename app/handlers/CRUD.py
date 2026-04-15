@@ -89,7 +89,10 @@ async def delete(message: dict, db: AsyncSession) -> dict:
     if transaccion_existente.activa:
         logger.info("Transaccion Activa, Eliminando...")
         transaccion_existente.activa = False
-        cuenta.saldo = cuenta.saldo - transaccion_existente.monto
+        if transaccion_existente.tipo == "gasto":
+            cuenta.saldo += transaccion_existente.monto
+        elif transaccion_existente.tipo == "ingreso":
+            cuenta.saldo -= transaccion_existente.monto
         await db.refresh(transaccion_existente)
         await db.refresh(cuenta)
         logger.info("Hecho")
