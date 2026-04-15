@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib
+from sqlalchemy import func
 
 matplotlib.use("Agg")
 import matplotlib.patheffects as path_effects
@@ -60,11 +61,12 @@ async def extraer_transacciones(db: AsyncSession, id: int):
             .where(
                 Cuentas.activa == True,
                 Usuarios.id_permitido == id,
-                Transaction.tipo == "gasto",
+                func.lower(Transaction.tipo) == "gasto",
                 Transaction.activa == True,
             ),
         )
         resultados = query.all()
+        logger.info(resultados)
         fecha, monto, cuenta, moneda, etiqueta = (
             zip(*resultados) if resultados else ([], [], [], [], [])
         )

@@ -31,8 +31,12 @@ class Transaction(base.Base):
                 fecha = datetime.datetime.strftime(valor, "%d/%m/%Y %H:%M")
                 return fecha
             except ValueError:
-                raise ValueError(f"La fecha '{valor}' no tiene el formato correcto")
-        raise TypeError("La fecha deb ser un string o un objeto datetime")
+                try:
+                    fecha_corta = datetime.datetime.strptime(valor, "%d/%m/%Y")
+                    return fecha_corta
+                except ValueError:
+                    raise ValueError(f"La fecha '{valor}' no tiene el formato correcto")
+        raise TypeError("La fecha debe ser un string o un objeto datetime")
 
     cuenta_name: Mapped["Cuentas"] = relationship(
         "Cuentas", back_populates="transacciones"
