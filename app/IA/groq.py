@@ -10,7 +10,7 @@ async def IA_Response(message: str, cuentas_usuario: list):
 
     logger.info("Iniciando Petición a Groq")
     fecha_actual = datetime.datetime.now()
-    fecha = fecha_actual.strftime("%d/%m/%Y %H:%M")
+    fecha = datetime.datetime.strftime(fecha_actual, "%d/%m/%Y %H:%M")
     key = os.getenv("API_KEY")
 
     str_cuentas = (
