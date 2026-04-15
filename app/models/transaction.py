@@ -28,7 +28,7 @@ class Transaction(base.Base):
 
         if isinstance(valor, str):
             try:
-                fecha = datetime.datetime.strptime(valor, "%d/%m/%Y %H:%M")
+                fecha = datetime.datetime.strftime(valor, "%d/%m/%Y %H:%M")
                 return fecha
             except ValueError:
                 raise ValueError(f"La fecha '{valor}' no tiene el formato correcto")
