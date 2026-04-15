@@ -8,7 +8,9 @@ import os
 
 
 SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_async_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_async_engine(
+    SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, pool_recycle=1800, pool_timeout=8
+)
 SessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
