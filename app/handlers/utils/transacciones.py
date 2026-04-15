@@ -4,6 +4,7 @@ from app.models.transaction import Transaction
 from datetime import datetime, timedelta
 from sqlalchemy import select
 from app.models.user import Usuarios
+from dateutil.relativedelta import relativedelta
 import logging
 
 logger = logging.getLogger(name=__name__)

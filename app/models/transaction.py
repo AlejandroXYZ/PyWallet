@@ -11,7 +11,7 @@ class Transaction(base.Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     monto: Mapped[Decimal] = mapped_column(
-        Numeric(8, 2), nullable=False, default="0.00"
+        Numeric(15, 2), nullable=False, default="0.00"
     )
     etiqueta: Mapped[str] = mapped_column(String(30), nullable=False)
     descripcion: Mapped[str] = mapped_column(String(100))

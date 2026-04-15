@@ -61,6 +61,7 @@ async def extraer_transacciones(db: AsyncSession, id: int):
                 Cuentas.activa == True,
                 Usuarios.id_permitido == id,
                 Transaction.tipo == "gasto",
+                Transaction.activa == True,
             ),
         )
         resultados = query.all()

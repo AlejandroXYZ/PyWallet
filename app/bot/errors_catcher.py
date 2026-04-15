@@ -1,4 +1,5 @@
 import traceback
+from aiogram import Bot
 from aiogram.types import ErrorEvent
 import os
 import html
@@ -7,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def error_catcher(event: ErrorEvent):
+async def error_catcher(event: ErrorEvent, bot: Bot):
     admin = os.getenv("ADMIN_ID", None)
     error = event.exception
     detalle = traceback.format_exc()
@@ -23,10 +24,10 @@ async def error_catcher(event: ErrorEvent):
     informe = f"<b>Error:</b>\n\n<code>{type(error).__name__}</code>\nMotivo:<code>{html.escape(str(error))}</code>\nUsuario:{user_id}\n\nTraceback:\n{html.escape(detalle[-3500:])}"
 
     try:
-        bot = event.update.bot
-        await bot.send_message(chat_id=admin, text=informe, parse_mode="HTML")
+        if admin:
+            await bot.send_message(chat_id=admin, text=informe, parse_mode="HTML")
 
-        if event.update.message:
+        if event.update and event.update.message:
             try:
                 logger.error(f"Error para usuario {user_id}: {type(error).__name__}")
                 await event.update.message.answer(

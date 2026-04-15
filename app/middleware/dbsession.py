@@ -21,10 +21,11 @@ class DBSessionMiddleware(BaseMiddleware):
                 await session.commit()
                 return resultado
 
-            except Exception:
+            except Exception as e:
                 await session.rollback()
                 error = traceback.format_exc()
                 logger.error(error)
 
                 if isinstance(event, Message):
                     await event.answer("Hubo un error interno procesando tu solicitud.")
+                raise e
