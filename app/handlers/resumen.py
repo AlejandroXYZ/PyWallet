@@ -1,11 +1,11 @@
 import logging
-from aiogram import Router
+from aiogram import Router, Bot
 from aiogram.filters import Command
 from aiogram.types import BufferedInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.handlers.utils.dolar import dolar_hoy
 from app.handlers.utils.cuentas import obtener_cuentas, obtener_total
-from aiogram.enums import ParseMode
+from aiogram.enums import ParseMode, ChatAction
 from app.middleware.dbsession import DBSessionMiddleware
 from app.db.connection import SessionLocal
 from app.handlers.utils.graficas import extraer_datos_resumen, saldos_actuales
@@ -16,7 +16,7 @@ logger = logging.getLogger(name=__name__)
 
 
 @resumen.message(Command("resumen"))
-async def obtener_resumen(message: Message, db: AsyncSession):
+async def obtener_resumen(message: Message, db: AsyncSession, bot: Bot):
     dolar = await dolar_hoy()
     cuentas = await obtener_cuentas(db, message.from_user.id)
     total = await obtener_total(db, message.from_user.id)
@@ -40,6 +40,7 @@ async def obtener_resumen(message: Message, db: AsyncSession):
     datos = await extraer_datos_resumen(db, message.from_user.id)
     if datos.empty:
         return
+    await bot.send_chat_action(chat_id=message.chat.id, action=ChatAction.TYPING)
     grafica = await asyncio.to_thread(saldos_actuales, datos)
     imagen = BufferedInputFile(file=grafica, filename="resumen_saldos")
     await message.answer_photo(photo=imagen, caption="Tus saldos actuales")
