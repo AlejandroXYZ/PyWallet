@@ -129,4 +129,5 @@ async def eliminando(
         await db.flush()
         nombre = permitidos.pop(int(message.text), None)
         logger.info(f"Usuario {nombre} eliminado")
+        await state.clear()
         await message.answer(f"Usuario {nombre} Eliminado Correctamente")
