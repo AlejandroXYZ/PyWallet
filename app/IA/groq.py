@@ -39,6 +39,8 @@ async def IA_Response(message: str, cuentas_usuario: list):
     
     3. Si es un comando de borrado:
     {{"accion":"DELETE","id":1234}}
+
+    Ten en cuenta de que la fecha actual es: {fecha}
     """
 
     mensajes = [
