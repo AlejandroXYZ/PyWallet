@@ -3,19 +3,28 @@ import os
 import logging
 from decimal import Decimal
 import pandas as pd
-
+from bs4 import BeautifulSoup
+import asyncio
 
 url = os.getenv("API_DOLAR")
 logger = logging.getLogger(__name__)
 
 
 async def dolar_hoy():
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=False) as client:
         try:
             r = await client.get(url=url)
-            respuesta = r.json()
+            respuesta = r.text
+            soup = BeautifulSoup(respuesta, "lxml")
+            dolar = soup.select(
+                selector="#dolar div.col-sm-6.col-xs-6.centrado > strong"
+            )
+            if not dolar:
+                return {"status": False, "mensaje": "No se obtuvo el precio del dólar"}
+            logger.info(f"Precio del dolar Hoy: {dolar}")
             logger.info("Dolar Obtenido Correctamente")
-            return {"status": True, "precio": respuesta["promedio"]}
+            dolar = Decimal(dolar[0].text.strip().replace(",", "."))
+            return {"status": True, "precio": f"{dolar:.2f}"}
         except Exception as e:
             logger.error(
                 f"Ha Ocurrido un Error mientras se obtenia el precio del dólar:\n\n {e} \n\n"
@@ -79,4 +88,13 @@ async def convertidor_df(datos: dict, tipo: str):
         logger.error(
             "Ha Ocurrido un Error mientras se convertian los bolívares a dolares en el DataFrame"
         )
+        raise e
+
+
+if __name__ == "__main__":
+    print("Ejecutando...")
+    url = "https://www.bcv.org.ve/"
+    try:
+        asyncio.run(dolar_hoy())
+    except Exception as e:
         raise e

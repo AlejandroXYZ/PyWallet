@@ -11,3 +11,6 @@ pandas
 numpy
 seaborn
 aiohttp
+bs4
+lxml
+
