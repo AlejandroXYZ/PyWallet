@@ -45,7 +45,7 @@ async def obtener_total(db: AsyncSession, telegram_id: int):
     query = (
         select(Cuentas.moneda, func.sum(Cuentas.saldo).label("saldo_total"))
         .join(Usuarios)
-        .where(Usuarios.id_permitido == telegram_id)
+        .where(Usuarios.id_permitido == telegram_id, Cuentas.activa == True)
         .group_by(Cuentas.moneda)
     )
     resultado = await db.execute(query)
